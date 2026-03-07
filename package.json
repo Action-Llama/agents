@@ -1,0 +1,8 @@
+{
+  "name": "agents",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@action-llama/action-llama": "latest"
+  }
+}

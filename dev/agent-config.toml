@@ -1,0 +1,14 @@
+credentials = ["github_token:proggy-al", "git_ssh:default"]
+schedule = "*/15 * * * *"
+
+[[webhooks]]
+type = "github"
+repos = ["Action-Llama/Action-Llama"]
+events = ["issues"]
+actions = ["labeled"]
+labels = ["agent"]
+
+[params]
+repos = ["Action-Llama/Action-Llama"]
+triggerLabel = "agent"
+assignee = "asselstine"

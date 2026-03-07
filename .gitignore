@@ -1,0 +1,6 @@
+node_modules/
+.workspace/
+.al/
+*.log
+.DS_Store
+.history
