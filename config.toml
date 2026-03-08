@@ -13,3 +13,6 @@ executionRoleArn = "arn:aws:iam::555876763362:role/al-ecs-execution-role"
 taskRoleArn = "arn:aws:iam::555876763362:role/al-default-task-role"
 subnets = [ "subnet-097aeaae203951749", "subnet-0031866f0ab4be512", "subnet-047022cca144180e8", "subnet-04a854e947e8c2863", "subnet-08cb61d9406cd7973", "subnet-02428c5215fcb1027" ]
 securityGroups = [ "sg-046e13bd1a9067ae0" ]
+
+[webhooks.secretCredentials]
+default = "github_webhook_secret:action-llama"
