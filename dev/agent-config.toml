@@ -3,12 +3,13 @@ schedule = "*/15 * * * *"
 
 [[webhooks]]
 type = "github"
-repos = ["Action-Llama/Action-Llama"]
+# No org/repos filter - accept webhooks from any repository
 events = ["issues"]
 actions = ["labeled"]
 labels = ["agent"]
 
 [params]
-repos = ["Action-Llama/Action-Llama"]
+# Organization to monitor during scheduled runs (webhook runs use repo from trigger)
+org = "Action-Llama"
 triggerLabel = "agent"
 assignee = "asselstine"
