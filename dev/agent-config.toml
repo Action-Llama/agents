@@ -2,9 +2,7 @@ credentials = ["github_token:proggy-al", "git_ssh:default"]
 schedule = "*/15 * * * *"
 
 [[webhooks]]
-type = "github"
-# No org/repos filter - accept webhooks from any repository
-org = ["Action-Llama"]
+source = "github"
 events = ["issues"]
 actions = ["labeled"]
 labels = ["agent"]
