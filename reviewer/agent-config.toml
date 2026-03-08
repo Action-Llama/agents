@@ -2,8 +2,7 @@ credentials = ["github_token:proggy-al", "git_ssh:default"]
 schedule = "*/10 * * * *"
 
 [[webhooks]]
-type = "github"
-source = "proggy-al"
+source = "github"
 events = ["pull_request"]
 actions = ["opened", "synchronize", "ready_for_review"]
 
