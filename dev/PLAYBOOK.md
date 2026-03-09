@@ -72,21 +72,39 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 
 4. **Read project conventions** — in the repo, read `PLAYBOOK.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` if they exist. Follow any conventions found there.
 
-5. **Implement changes** — work in the repo. Make the minimum necessary changes, follow existing patterns, and write or update tests if the project has a test suite.
+5. **Assess scope** — after reading the issue and plan, determine whether the work fits within the existing repo or requires additional repos. Some issues may require building a new tool, library, or service in a separate repo, then wiring it into the original project as a dependency or integration. If the issue only requires changes to the existing repo, skip the multi-repo steps below.
 
-6. **Validate** — run the project's test suite and linters (e.g., `npm test`). Fix failures before proceeding.
+6. **Create new repos if needed** — if the issue calls for a new tool, library, package, or service:
+   - Determine the org from `$REPO` (e.g., `Action-Llama`)
+   - Create the repo: `gh repo create <org>/<new-repo-name> --public --clone --description "<description>"`
+   - Clone it to `/workspace/<new-repo-name>` and build out the project (README, package.json / go.mod / etc., source code, tests)
+   - Commit, push, and note the repo URL — you will reference it later
+   - Repeat for each new repo needed
 
-7. **Commit** — `git add -A && git commit -m "fix: <description> (closes #$ISSUE_NUMBER)"`
+7. **Implement changes** — work in the primary repo (`/workspace/repo`). Make the minimum necessary changes, follow existing patterns, and write or update tests if the project has a test suite. If you created new repos in step 6, update the primary repo's dependencies or configuration to reference them (e.g., add npm/pip dependencies, update config files, add git submodules).
 
-8. **Push** — `git push -u origin agent/$ISSUE_NUMBER`
+8. **Wire up cross-repo dependencies** — if you created new repos, make sure the primary repo can actually use them:
+   - For npm packages: publish or reference via git URL in `package.json`
+   - For Go modules: reference the new module path
+   - For Python: add to `requirements.txt` or `pyproject.toml` with a git+ssh URL
+   - For other ecosystems: follow the standard dependency mechanism
+   - Run install/build commands to verify the integration works
 
-9. **Create a PR** — run `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\\n\\n<description>"`.
+9. **Validate** — run the project's test suite and linters (e.g., `npm test`) in each repo you modified. Fix failures before proceeding.
 
-10. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
+10. **Commit and push all repos** — for each repo you modified (primary + any new repos):
+    - `git add -A && git commit -m "fix: <description> (closes <org>/<primary-repo>#$ISSUE_NUMBER)"`
+    - `git push -u origin agent/$ISSUE_NUMBER` (or `main` for newly created repos)
 
-11. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --add-label agent-completed`.
+11. **Create PRs** — create a PR for the primary repo:
+    - `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\n\n<description>"`
+    - If you created new repos, mention them in the PR body so reviewers have full context
 
-12. **Release the lock** — run:
+12. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`. If you created new repos, list them in the comment so the issue has a full record of what was built.
+
+13. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --add-label agent-completed`.
+
+14. **Release the lock** — run:
     ```
     curl -s -X POST $GATEWAY_URL/locks/release \
       -H 'Content-Type: application/json' \
@@ -96,6 +114,6 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 ## Rules
 
 - Work on exactly ONE issue per run
-- Never modify files outside the repo directory
-- **You MUST complete steps 7-11.** Do not stop early.
+- You may create new repos and work across multiple repos when the issue requires it
+- **You MUST complete steps 10-13.** Do not stop early.
 - If tests fail after 2 attempts, create the PR anyway with a note about failing tests
