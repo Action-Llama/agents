@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@action-llama/action-llama": "^0.6.4"
+    "@action-llama/action-llama": "^0.6.5"
   }
 }
