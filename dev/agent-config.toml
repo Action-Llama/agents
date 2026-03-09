@@ -1,5 +1,5 @@
 credentials = ["github_token:proggy-al", "git_ssh:default"]
-schedule = "*/15 * * * *"
+schedule = "0 * * * *"
 scale = 4
 
 [model]

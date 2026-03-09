@@ -14,6 +14,12 @@ actions = ["labeled"]
 labels = ["agent"]
 author = "asselstine"
 
+[[webhooks]]
+source = "github"
+events = ["issue_comment"]
+actions = ["created"]
+labels = ["agent"]
+
 [params]
 org = "Action-Llama"
 triggerLabel = "agent"
