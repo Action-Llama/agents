@@ -1,0 +1,17 @@
+credentials = ["github_token:proggy-al", "git_ssh:default", "aws_credentials:default"]
+schedule = "*/15 * * * *"  # Every 15 minutes
+scale = 1
+
+[model]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
+
+[params]
+# Organization to monitor for repositories
+org = "Action-Llama"
+# Minimum time between creating issues for the same error (in minutes)
+errorCooldownMinutes = 2880  # 2 days
+# Log aggregation API endpoint (placeholder - will be implemented in log-watcher repo)
+logWatcherEndpoint = "http://log-watcher:3000"
