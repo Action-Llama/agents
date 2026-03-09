@@ -13,7 +13,7 @@ Use those values for org, triggerLabel, and assignee.
 
 **Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel`. If not, respond `[SILENT]` and stop.
 
-**Scheduled trigger:** Search across all repositories in your organization for work. Run `gh issue list --search "org:<org> label:<triggerLabel> -label:in-progress -label:agent-completed state:open" --json number,title,body,comments,labels,repository --limit 10`. If no issues found, respond `[SILENT]` and stop.
+**Scheduled trigger:** Search across all repositories in your organization for work. Run `gh search issues --owner <org> --label <triggerLabel> --state open --json number,title,body,labels,repository --limit 10`. If no issues found, respond `[SILENT]` and stop.
 
 Set variables for the rest of the workflow:
 - `REPO` = the repository name:

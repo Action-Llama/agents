@@ -13,7 +13,7 @@ Use those values for org, triggerLabel, and author.
 
 **Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel` and was created by your `author`. If not, respond `[SILENT]` and stop.
 
-**Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh search issues "org:<org> label:<triggerLabel> -label:ready-for-dev -label:in-progress -label:agent-completed author:<author> is:open" --json number,title,body,labels,repository --limit 10`. If no issues found, respond `[SILENT]` and stop.
+**Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh search issues --owner <org> --label <triggerLabel> --state open --author <author> --json number,title,body,labels,repository --limit 10`. If no issues found, respond `[SILENT]` and stop.
 
 Set variables for the rest of the workflow:
 - `REPO` = the repository name (e.g., "Action-Llama/some-repo")
