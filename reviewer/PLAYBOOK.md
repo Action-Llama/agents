@@ -19,18 +19,26 @@ Set variables for the rest of the workflow:
 - `REPO` = the repository name (e.g., "Action-Llama/some-repo")
 - `PR_NUMBER` = the PR number
 
+## Check for Previous Agent Activity
+
+Before doing any other work, check if this agent has already commented on this PR.
+
+1. **Get the most recent comment** — run `gh pr view $PR_NUMBER --repo $REPO --json comments --jq '.comments[-1].body'`
+
+2. **If the most recent comment was left by this agent** (contains "Automatically reviewed" or "Waiting for GitHub checks" or "Merge conflicts detected" or "Tests are failing" or "security concerns"), then respond `[SILENT]` and stop immediately. Do not clone, test, or do any further work. This prevents duplicate comments and wasted work when the PR state has not changed.
+
 ## Initial PR Assessment
 
 1. **Get PR details** — run `gh pr view $PR_NUMBER --repo $REPO --json state,draft,mergeable,mergeStateStatus,statusCheckRollup,headRefName,baseRefName,author,assignees`
 
 2. **Skip if not ready** — if the PR is:
    - Draft (draft: true)
-   - Not mergeable (mergeable: "CONFLICTING") 
+   - Not mergeable (mergeable: "CONFLICTING")
    - Already merged/closed (state: not "OPEN")
    Then respond `[SILENT]` and stop.
 
 3. **Check GitHub status checks** — examine `statusCheckRollup`. If any required checks are failing or pending:
-   - Comment: "Waiting for GitHub checks to pass before review. Current status: [list failing/pending checks]"
+   - Comment: "⏳ Waiting for GitHub checks to pass before review. Current status: [list failing/pending checks]"
    - Respond `[SILENT]` and stop.
 
 ## Setup Working Environment
@@ -102,9 +110,10 @@ Set variables for the rest of the workflow:
 ## Error Handling
 
 If any step fails:
-1. Add a comment to the PR explaining what went wrong
-2. Do NOT merge the PR
-3. Respond with details of the failure
+1. Check if the most recent PR comment already describes this same failure — if so, do NOT add another comment. Respond `[SILENT]` and stop.
+2. Otherwise, add a comment to the PR explaining what went wrong
+3. Do NOT merge the PR
+4. Respond with details of the failure
 
 ## Rules
 
@@ -114,3 +123,4 @@ If any step fails:
 - If unsure about code changes, err on the side of caution and request human review
 - Never modify files outside the PR repository directory
 - Only process PRs that are ready for review (not drafts)
+- **Never post duplicate comments.** Before commenting, always check if the most recent comment on the PR already conveys the same message. If so, skip commenting and respond `[SILENT]`.
