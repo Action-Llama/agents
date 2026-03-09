@@ -1,0 +1,20 @@
+credentials = ["github_token:proggy-al", "git_ssh:default"]
+schedule = "0 * * * *"
+
+[model]
+provider = "anthropic"
+model = "claude-opus-4-20250514"
+thinkingLevel = "high"
+authType = "api_key"
+
+[[webhooks]]
+source = "github"
+events = ["issues"]
+actions = ["labeled"]
+labels = ["agent"]
+author = "asselstine"
+
+[params]
+org = "Action-Llama"
+triggerLabel = "agent"
+author = "asselstine"

@@ -11,9 +11,9 @@ Use those values for org, triggerLabel, and assignee.
 
 ## Determine repository and issue
 
-**Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel` and is assigned to your `assignee`. If not, respond `[SILENT]` and stop.
+**Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel`. If not, respond `[SILENT]` and stop.
 
-**Scheduled trigger:** Search across all repositories in your organization for work. Run `gh issue list --search "org:<org> label:<triggerLabel> assignee:<assignee> state:open" --json number,title,body,comments,labels,repository --limit 1`. If an issue is found, extract the repository name from the `repository.nameWithOwner` field. If no issues found, respond `[SILENT]` and stop.
+**Scheduled trigger:** Search across all repositories in your organization for work. Run `gh issue list --search "org:<org> label:<triggerLabel> -label:in-progress -label:agent-completed state:open" --json number,title,body,comments,labels,repository --limit 1`. If an issue is found, extract the repository name from the `repository.nameWithOwner` field. If no issues found, respond `[SILENT]` and stop.
 
 Set variables for the rest of the workflow:
 - `REPO` = the repository name:
@@ -68,7 +68,7 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 
 2. **Clone and branch** — run `git clone git@github.com:$REPO.git /workspace/repo && cd /workspace/repo && git checkout -b agent/$ISSUE_NUMBER`.
 
-3. **Understand the issue** — read the title, body, and comments. Note file paths, acceptance criteria, and linked issues.
+3. **Understand the issue** — run `gh issue view $ISSUE_NUMBER --repo $REPO --json title,body,comments,labels` and read everything carefully. The planner agent will have left a comment with an implementation plan — use that as your guide. Read all comments for full context including any clarifications or updated requirements.
 
 4. **Read project conventions** — in the repo, read `PLAYBOOK.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` if they exist. Follow any conventions found there.
 
@@ -99,4 +99,3 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 - Never modify files outside the repo directory
 - **You MUST complete steps 7-11.** Do not stop early.
 - If tests fail after 2 attempts, create the PR anyway with a note about failing tests
-- If the issue is unclear, comment asking for clarification and stop

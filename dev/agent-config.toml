@@ -1,14 +1,22 @@
 credentials = ["github_token:proggy-al", "git_ssh:default"]
 schedule = "*/15 * * * *"
+scale = 4
+
+[model]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
 
 [[webhooks]]
 source = "github"
 events = ["issues"]
 actions = ["labeled"]
-labels = ["agent"]
+labels = ["ready-for-dev"]
+author = "asselstine"
 
 [params]
 # Organization to monitor during scheduled runs (webhook runs use repo from trigger)
 org = "Action-Llama"
-triggerLabel = "agent"
+triggerLabel = "ready-for-dev"
 assignee = "asselstine"

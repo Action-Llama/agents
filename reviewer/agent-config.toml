@@ -1,5 +1,6 @@
 credentials = ["github_token:proggy-al", "git_ssh:default"]
 schedule = "*/10 * * * *"
+scale = 2
 
 [[webhooks]]
 source = "github"
