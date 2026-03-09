@@ -13,7 +13,7 @@ Use those values for org, triggerLabel, and author.
 
 **Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel` and was created by your `author`. If not, respond `[SILENT]` and stop.
 
-**Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh issue list --search "org:<org> label:<triggerLabel> -label:ready-for-dev -label:in-progress -label:agent-completed author:<author> state:open" --json number,title,body,comments,labels,repository --limit 1`. If an issue is found, extract the repository name from the `repository.nameWithOwner` field. If no issues found, respond `[SILENT]` and stop.
+**Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh issue list --search "org:<org> label:<triggerLabel> -label:ready-for-dev -label:in-progress -label:agent-completed author:<author> state:open" --json number,title,body,comments,labels,repository --limit 10`. If no issues found, respond `[SILENT]` and stop.
 
 Set variables for the rest of the workflow:
 - `REPO` = the repository name (e.g., "Action-Llama/some-repo")
@@ -30,8 +30,8 @@ LOCK_RESULT=$(curl -s -X POST $GATEWAY_URL/locks/acquire \
 ```
 
 Check the result:
-- If `ok` is `true` — you own the lock. Continue.
-- If `ok` is `false` — another instance is already working on this issue. Respond `[SILENT]` and stop immediately.
+- If `ok` is `true` — you own the lock. Continue with this issue.
+- If `ok` is `false` — another instance is already working on this issue. **Move on to the next issue in the search results** and attempt to acquire its lock. Repeat until you either acquire a lock or run out of issues. If no lock can be acquired, respond `[SILENT]` and stop immediately.
 
 **IMPORTANT:** From this point forward, every exit path MUST release the lock first:
 ```

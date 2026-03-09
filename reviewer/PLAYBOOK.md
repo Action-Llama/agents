@@ -13,7 +13,7 @@ Use those values for org and assignee.
 
 **Webhook trigger:** Extract the repository and PR number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields.
 
-**Scheduled trigger:** Search across all repositories in your organization for open PRs. Run `gh search prs --owner <org> --state open --limit 1 --json number,title,repository,draft,mergeable`. If a PR is found, extract the repository name from the `repository.nameWithOwner` field. If no PRs found, respond `[SILENT]` and stop.
+**Scheduled trigger:** Search across all repositories in your organization for open PRs. Run `gh search prs --owner <org> --state open --limit 10 --json number,title,repository,draft,mergeable`. If no PRs found, respond `[SILENT]` and stop.
 
 Set variables for the rest of the workflow:
 - `REPO` = the repository name (e.g., "Action-Llama/some-repo")
@@ -30,8 +30,8 @@ LOCK_RESULT=$(curl -s -X POST $GATEWAY_URL/locks/acquire \
 ```
 
 Check the result:
-- If `ok` is `true` — you own the lock. Continue.
-- If `ok` is `false` — another instance is already working on this PR. Respond `[SILENT]` and stop immediately. Do not clone, test, or do any further work.
+- If `ok` is `true` — you own the lock. Continue with this PR.
+- If `ok` is `false` — another instance is already working on this PR. **Move on to the next PR in the search results** and attempt to acquire its lock. Repeat until you either acquire a lock or run out of PRs. If no lock can be acquired, respond `[SILENT]` and stop. Do not clone, test, or do any further work.
 
 **IMPORTANT:** From this point forward, every exit path (error, skip, or merge) MUST release the lock first:
 ```
