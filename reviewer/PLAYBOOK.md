@@ -19,13 +19,26 @@ Set variables for the rest of the workflow:
 - `REPO` = the repository name (e.g., "Action-Llama/some-repo")
 - `PR_NUMBER` = the PR number
 
-## Check for Previous Agent Activity
+## Acquire resource lock
 
-Before doing any other work, check if this agent has already commented on this PR.
+Before doing any other work, acquire an exclusive lock on the PR. This prevents parallel instances from working on the same PR and posting duplicate comments.
 
-1. **Get the most recent comment** — run `gh pr view $PR_NUMBER --repo $REPO --json comments --jq '.comments[-1].body'`
+```
+LOCK_RESULT=$(curl -s -X POST $GATEWAY_URL/locks/acquire \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github pr '$REPO'#'$PR_NUMBER'"}')
+```
 
-2. **If the most recent comment was left by this agent** (contains "Automatically reviewed" or "Waiting for GitHub checks" or "Merge conflicts detected" or "Tests are failing" or "security concerns"), then respond `[SILENT]` and stop immediately. Do not clone, test, or do any further work. This prevents duplicate comments and wasted work when the PR state has not changed.
+Check the result:
+- If `ok` is `true` — you own the lock. Continue.
+- If `ok` is `false` — another instance is already working on this PR. Respond `[SILENT]` and stop immediately. Do not clone, test, or do any further work.
+
+**IMPORTANT:** From this point forward, every exit path (error, skip, or merge) MUST release the lock first:
+```
+curl -s -X POST $GATEWAY_URL/locks/release \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github pr '$REPO'#'$PR_NUMBER'"}'
+```
 
 ## Initial PR Assessment
 
@@ -35,11 +48,21 @@ Before doing any other work, check if this agent has already commented on this P
    - Draft (draft: true)
    - Not mergeable (mergeable: "CONFLICTING")
    - Already merged/closed (state: not "OPEN")
-   Then respond `[SILENT]` and stop.
+   Then release the lock, respond `[SILENT]`, and stop.
 
 3. **Check GitHub status checks** — examine `statusCheckRollup`. If any required checks are failing or pending:
    - Comment: "⏳ Waiting for GitHub checks to pass before review. Current status: [list failing/pending checks]"
-   - Respond `[SILENT]` and stop.
+   - Release the lock, respond `[SILENT]`, and stop.
+
+## Heartbeat
+
+During long-running operations (cloning, testing, building), send a heartbeat to keep your lock alive:
+```
+curl -s -X POST $GATEWAY_URL/locks/heartbeat \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github pr '$REPO'#'$PR_NUMBER'"}'
+```
+Send a heartbeat before each major step (clone, test, build, merge) to prevent the lock from expiring.
 
 ## Setup Working Environment
 
@@ -78,16 +101,16 @@ Before doing any other work, check if this agent has already commented on this P
 2. **If merge conflicts exist**:
    - Try to resolve simple conflicts automatically (e.g., package-lock.json, yarn.lock)
    - For code conflicts, comment on the PR: "Merge conflicts detected that require manual resolution. Please rebase or merge the latest changes."
-   - Respond `[SILENT]` and stop.
+   - Release the lock, respond `[SILENT]`, and stop.
 
 3. **If security issues found**:
    - Comment on the PR with specific security concerns found
    - Request changes and stop processing
-   - Respond `[SILENT]` and stop.
+   - Release the lock, respond `[SILENT]`, and stop.
 
 4. **If tests fail**:
    - Comment on the PR: "Tests are failing. Please fix the following issues: [list test failures]"
-   - Respond `[SILENT]` and stop.
+   - Release the lock, respond `[SILENT]`, and stop.
 
 5. **If changes were made** (conflict resolution, etc.):
    - Commit changes: `git add -A && git commit -m "chore: auto-resolve conflicts and issues"`
@@ -107,13 +130,26 @@ Before doing any other work, check if this agent has already commented on this P
    gh pr comment $PR_NUMBER --repo $REPO --body "✅ Automatically reviewed and merged. All checks passed."
    ```
 
+4. **Release the lock** — run:
+   ```
+   curl -s -X POST $GATEWAY_URL/locks/release \
+     -H 'Content-Type: application/json' \
+     -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github pr '$REPO'#'$PR_NUMBER'"}'
+   ```
+
 ## Error Handling
 
 If any step fails:
-1. Check if the most recent PR comment already describes this same failure — if so, do NOT add another comment. Respond `[SILENT]` and stop.
-2. Otherwise, add a comment to the PR explaining what went wrong
-3. Do NOT merge the PR
-4. Respond with details of the failure
+1. Release the lock:
+   ```
+   curl -s -X POST $GATEWAY_URL/locks/release \
+     -H 'Content-Type: application/json' \
+     -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github pr '$REPO'#'$PR_NUMBER'"}'
+   ```
+2. Check if the most recent non-claim PR comment already describes this same failure — if so, do NOT add another comment. Respond `[SILENT]` and stop.
+3. Otherwise, add a comment to the PR explaining what went wrong
+4. Do NOT merge the PR
+5. Respond with details of the failure
 
 ## Rules
 
@@ -123,4 +159,5 @@ If any step fails:
 - If unsure about code changes, err on the side of caution and request human review
 - Never modify files outside the PR repository directory
 - Only process PRs that are ready for review (not drafts)
-- **Never post duplicate comments.** Before commenting, always check if the most recent comment on the PR already conveys the same message. If so, skip commenting and respond `[SILENT]`.
+- **Never post duplicate comments.** Before commenting, always check if the most recent non-claim comment on the PR already conveys the same message. If so, skip commenting and respond `[SILENT]`.
+- **Always release the lock** before stopping, regardless of the reason.

@@ -21,6 +21,37 @@ Set variables for the rest of the workflow:
   - **Scheduled:** from `repository.nameWithOwner` in the search results
 - `ISSUE_NUMBER` = the issue number
 
+## Acquire resource lock
+
+Before doing any other work, acquire an exclusive lock on the issue. This prevents parallel instances from working on the same issue.
+
+```
+LOCK_RESULT=$(curl -s -X POST $GATEWAY_URL/locks/acquire \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github issue '$REPO'#'$ISSUE_NUMBER'"}')
+```
+
+Check the result:
+- If `ok` is `true` — you own the lock. Continue.
+- If `ok` is `false` — another instance is already working on this issue. Respond `[SILENT]` and stop immediately. Do not clone, label, or do any further work.
+
+**IMPORTANT:** From this point forward, every exit path (error, skip, or completion) MUST release the lock first:
+```
+curl -s -X POST $GATEWAY_URL/locks/release \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github issue '$REPO'#'$ISSUE_NUMBER'"}'
+```
+
+## Heartbeat
+
+During long-running operations (cloning, implementing, testing), send a heartbeat to keep your lock alive:
+```
+curl -s -X POST $GATEWAY_URL/locks/heartbeat \
+  -H 'Content-Type: application/json' \
+  -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github issue '$REPO'#'$ISSUE_NUMBER'"}'
+```
+Send a heartbeat before each major step (clone, implement, test, push) to prevent the lock from expiring.
+
 ## Setup — ensure labels exist
 
 Before working on the issue, ensure the required labels exist on the target repo:
@@ -54,6 +85,13 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 10. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
 
 11. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --add-label agent-completed`.
+
+12. **Release the lock** — run:
+    ```
+    curl -s -X POST $GATEWAY_URL/locks/release \
+      -H 'Content-Type: application/json' \
+      -d '{"secret":"'$SHUTDOWN_SECRET'","resourceKey":"github issue '$REPO'#'$ISSUE_NUMBER'"}'
+    ```
 
 ## Rules
 
