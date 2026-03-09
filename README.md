@@ -14,4 +14,4 @@ These are the Action-Llama agents that work on the project.
 1. Configure credentials: `npx al doctor`
 2. Start all agents: `npx al start`
 
-For more information, see [AGENTS.md](AGENTS.md).
+For more information, see [AGENTS.md](AGENTS.md)
