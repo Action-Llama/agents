@@ -1,0 +1,11 @@
+{
+  "name": "linear-integration-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node simple-test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

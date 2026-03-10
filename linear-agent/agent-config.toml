@@ -1,0 +1,30 @@
+# Example Linear-enabled agent configuration
+credentials = ["linear_oauth:default", "github_token:proggy-al", "git_ssh:default"]
+schedule = "0 * * * *"
+scale = 2
+
+[model]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
+
+# Linear webhook configuration
+[[webhooks]]
+source = "linear"
+events = ["Issue", "Comment"]
+actions = ["create", "update"]
+teams = ["engineering", "product"]
+labels = ["ready-for-dev", "bug", "enhancement"]
+
+# GitHub webhook configuration (for cross-platform work)
+[[webhooks]] 
+source = "github"
+events = ["issues"]
+actions = ["labeled"]
+labels = ["ready-for-dev"]
+
+[params]
+org = "Action-Llama"
+triggerLabel = "ready-for-dev"
+assignee = "asselstine"

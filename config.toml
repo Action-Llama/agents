@@ -20,3 +20,7 @@ securityGroups = [ "sg-046e13bd1a9067ae0" ]
 [webhooks.github]
 type = "github"
 credential = "action-llama"
+
+[webhooks.linear]
+type = "linear"
+credential = "linear-webhook-secret"

@@ -1,0 +1,27 @@
+{
+  "name": "@action-llama/linear-integration",
+  "version": "1.0.0",
+  "description": "Linear integration for Action-Llama agents",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./credentials": "./credentials/index.js",
+    "./webhooks": "./webhooks/index.js"
+  },
+  "keywords": [
+    "linear",
+    "action-llama",
+    "webhook",
+    "oauth",
+    "integration"
+  ],
+  "author": "Action-Llama",
+  "license": "MIT",
+  "peerDependencies": {
+    "@action-llama/action-llama": "^0.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
