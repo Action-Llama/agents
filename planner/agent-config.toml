@@ -1,0 +1,31 @@
+credentials = ["github_token:proggy-al", "git_ssh:default"]
+schedule = "0 * * * *"
+timeout = 600
+scale = 1
+
+[model]
+provider = "anthropic"
+model = "claude-opus-4-20250514"
+thinkingLevel = "xhigh"
+authType = "api_key"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["issues"]
+actions = ["labeled"]
+labels = ["plan"]
+author = "asselstine"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["issue_comment"]
+actions = ["created"]
+labels = ["plan"]
+author = "asselstine"
+
+[params]
+org = "Action-Llama"
+triggerLabel = "plan"
+author = "asselstine"

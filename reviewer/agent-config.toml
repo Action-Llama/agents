@@ -1,0 +1,21 @@
+credentials = ["github_token:proggy-al", "git_ssh:default"]
+schedule = "0 * * * *"
+scale = 4
+timeout = 1800 
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["pull_request"]
+actions = ["opened", "synchronize", "ready_for_review"]
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["check_suite"]
+actions = ["completed"]
+
+[params]
+# Organization to monitor during scheduled runs (webhook runs use repo from trigger)
+org = "Action-Llama"
+author = "asselstine"
