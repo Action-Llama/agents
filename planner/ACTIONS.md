@@ -7,6 +7,7 @@ Use those values for org, triggerLabel, and author.
 
 `GITHUB_TOKEN` is already set in your environment. Use `gh` CLI and `git` directly.
 
+
 **You MUST complete ALL steps below.**
 
 ## Determine repository and issue
