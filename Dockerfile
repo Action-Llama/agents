@@ -18,5 +18,5 @@
 FROM al-agent:latest
 
 USER root
-RUN apk add --no-cache github-cli
+RUN apk add --no-cache github-cli --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
 USER node
