@@ -1,0 +1,15 @@
+credentials = ["github_token", "git_ssh"]
+
+[model]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
+
+[[webhooks]]
+source = "github"
+events = ["workflow_run"]
+actions = ["completed"]
+
+[params]
+issueLabel = "ci-failure"

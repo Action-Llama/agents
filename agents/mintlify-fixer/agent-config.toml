@@ -1,0 +1,15 @@
+credentials = ["github_token", "git_ssh"]
+
+[model]
+provider = "anthropic"
+model = "claude-sonnet-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
+
+[[webhooks]]
+source = "github"
+events = ["deployment_status"]
+
+[params]
+# Mintlify app name as it appears in GitHub deployments
+mintlifyAppName = "mintlify"

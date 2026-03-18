@@ -1,0 +1,10 @@
+[model]
+provider = "anthropic"
+model = "claude-opus-4-20250514"
+thinkingLevel = "medium"
+authType = "api_key"
+
+[webhooks.github]
+type = "github"
+credential = "default"
+
