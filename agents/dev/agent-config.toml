@@ -1,6 +1,6 @@
 credentials = ["github_token", "git_ssh"]
 schedule = "0 * * * *"
-scale = 4
+scale = 2
 # Need 30 min timeout just in case
 timeout = 1800
 

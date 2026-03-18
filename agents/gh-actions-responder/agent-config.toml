@@ -10,6 +10,7 @@ authType = "api_key"
 source = "github"
 events = ["workflow_run"]
 actions = ["completed"]
+branches = ["main"]
 
 [params]
 issueLabel = "ci-failure"
