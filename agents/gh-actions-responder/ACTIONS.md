@@ -26,6 +26,7 @@ If there is no `<webhook-trigger>` block, stop — this agent only operates on w
 
 ```
 gh label create "<issueLabel>" --repo $REPO --color D93F0B --description "Automated CI failure triage" --force
+gh label create "ready-for-dev" --repo $REPO --color 0E8A16 --description "Ready for developer agent" --force
 ```
 
 ## Check if failure is already tracked
@@ -61,7 +62,7 @@ Search the results for an issue referencing the same workflow name. If one exist
    ```
    gh issue create --repo $REPO \
      --title "CI failure: <workflow name> — <brief description of failure>" \
-     --label "<issueLabel>" \
+     --label "<issueLabel>" --label "ready-for-dev" \
      --body "$(cat <<'ISSUE_EOF'
    ## CI Failure Report
 
