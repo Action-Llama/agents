@@ -16,11 +16,19 @@ Use those values for org, triggerLabel, and author.
 
 **Scheduled trigger:** Search across all repositories in your organization for work. Run `gh search issues --owner <org> --label <triggerLabel> --author <author> --state open --json number,title,body,labels,repository --limit 10`. If no issues found, stop.
 
-Set variables for the rest of the workflow:
-- `REPO` = the repository name:
-  - **Webhook:** from `repo` field in `<webhook-trigger>` (e.g., "Action-Llama/some-repo")
-  - **Scheduled:** from `repository.nameWithOwner` in the search results
-- `ISSUE_NUMBER` = the issue number
+Set shell variables **immediately** — all subsequent commands depend on them:
+
+```
+# Webhook: extract from <webhook-trigger> JSON
+REPO="<repo field from webhook-trigger>"          # e.g. "Action-Llama/some-repo"
+ISSUE_NUMBER=<number field from webhook-trigger>   # e.g. 42
+
+# Scheduled: extract from gh search results
+REPO="<repository.nameWithOwner from search>"
+ISSUE_NUMBER=<number from search>
+```
+
+**You MUST run these export commands before ANY `gh` or `git` command below.** Every step uses `$REPO` and `$ISSUE_NUMBER`.
 
 ## Acquire resource lock
 
@@ -63,34 +71,36 @@ gh label create "agent-completed" --repo $REPO --color 1D76DB --description "Age
 
 2. **Clone and branch** — run `git clone git@github.com:$REPO.git /tmp/repo && cd /tmp/repo && git checkout -b agent/$ISSUE_NUMBER`.
 
-3. **Understand the issue** — run `gh issue view $ISSUE_NUMBER --repo $REPO --json title,body,comments,labels` and read everything carefully. The planner agent will have left a comment with an implementation plan — use that as your guide. Read all comments for full context including any clarifications or updated requirements.
+3. **Install dependencies** — run the project's install command (e.g. `npm install`, `yarn install`, `pnpm install`) so that dev dependencies like test runners and linters are available. Check `package.json` or equivalent to determine the correct command.
 
-4. **Follow project conventions** — in the repo, read `ACTIONS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` if they exist. Analyze the current project structure, docs, tests, etc., to see how new code would fit in properly.
+4. **Understand the issue** — run `gh issue view $ISSUE_NUMBER --repo $REPO --json title,body,comments,labels` and read everything carefully. The planner agent will have left a comment with an implementation plan — use that as your guide. Read all comments for full context including any clarifications or updated requirements.
 
-5. **Implement changes** — work in `/tmp/repo`. Make the minimum necessary changes, follow existing patterns, and write or update tests if the project has a test suite. **Only modify files in `$REPO` — do not create new repositories, clone other repos, or open PRs on other repos.**
+5. **Follow project conventions** — in the repo, read `ACTIONS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md` if they exist. Analyze the current project structure, docs, tests, etc., to see how new code would fit in properly.
 
-6. **Validate** — before committing, discover and run all available checks (linting, type checking, tests, build). Look at the project's config files and task runner to find what's available. Run each check, fix any failures, and re-run all checks — a fix for one can break another. Repeat up to 3 rounds. If checks still fail after 3 rounds, proceed to commit anyway and note the failures in the PR description.
+6. **Implement changes** — work in `/tmp/repo`. Make the minimum necessary changes, follow existing patterns, and write or update tests if the project has a test suite. **Only modify files in `$REPO` — do not create new repositories, clone other repos, or open PRs on other repos.**
 
-7. **Commit and push** —
+7. **Validate** — before committing, discover and run all available checks (linting, type checking, tests, build). Look at the project's config files and task runner to find what's available. Run each check, fix any failures, and re-run all checks — a fix for one can break another. Repeat up to 3 rounds. If checks still fail after 3 rounds, proceed to commit anyway and note the failures in the PR description.
+
+8. **Commit and push** —
     - `git add -A && git commit -m "fix: <description> (closes #$ISSUE_NUMBER)"`
     - `git push -u origin agent/$ISSUE_NUMBER`
 
-8. **Create PR** — `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\n\n<description>"`
+9. **Create PR** — `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\n\n<description>"`
 
-9. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
+10. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
 
-10. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --remove-label "<triggerLabel>" --add-label agent-completed`.
+11. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --remove-label "<triggerLabel>" --add-label agent-completed`.
 
-11. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
+12. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
 
 ## Rules
 
 - Work on exactly ONE issue per run
 - **Only modify files in `$REPO`.** Do not create new repos, clone other repos, or open PRs on other repos.
-- **You MUST complete steps 7-10.** Do not stop early.
+- **You MUST complete steps 8-11.** Do not stop early.
 - If tests fail after 2 attempts, create the PR anyway with a note about failing tests
 - **Every issue you claim MUST be resolved before you finish.** Either:
-  - Create a PR (steps 7-10 above), OR
+  - Create a PR (steps 8-11 above), OR
   - If you cannot implement the changes (e.g., issue is unclear, out of scope, blocked), close the issue with a comment explaining why: `gh issue close $ISSUE_NUMBER --repo $REPO --comment "Closing: <reason>"`
   - Never leave a claimed issue open without a PR or a closure.
 - **Scheduled runs:** If you completed work on an issue and there may be more issues to process, run `al-rerun` so the scheduler re-runs you immediately.
