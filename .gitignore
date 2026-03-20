@@ -1,0 +1,8 @@
+node_modules/
+.workspace/
+.al/
+.env.toml
+*.log
+.DS_Store
+.claude
+.history

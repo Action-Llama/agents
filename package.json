@@ -1,0 +1,8 @@
+{
+  "name": "new-agents",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@action-llama/action-llama": "^0.14.1"
+  }
+}
