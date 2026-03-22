@@ -38,4 +38,8 @@ jobs:
           echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
 
       - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ANTHROPIC_KEY: dummy
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
         run: npx al push --env prod --headless --no-creds
