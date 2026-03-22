@@ -53,6 +53,25 @@ jobs:
           # Configure Anthropic API key 
           printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
 
+      - name: Debug credentials
+        run: |
+          echo "=== Credential directory listing ==="
+          ls -la ~/.action-llama/credentials/
+          echo "=== Credential file contents (structure only) ==="
+          for file in ~/.action-llama/credentials/*.json; do
+            if [ -f "$file" ]; then
+              echo "--- $(basename "$file") ---"
+              # Show structure without exposing secrets
+              jq -r 'keys | join(", ")' "$file" 2>/dev/null || echo "Invalid JSON"
+            fi
+          done
+          echo "=== Environment info ==="
+          echo "HOME: $HOME"
+          echo "PWD: $PWD"
+          echo "USER: $USER"
+          echo "=== Test al creds command ==="
+          npx al creds ls || echo "al creds ls failed"
+
       - name: Deploy
         env:
           GITHUB_TOKEN: ${{ github.token }}
