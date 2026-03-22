@@ -4,6 +4,7 @@ metadata:
   credentials:
     - github_token
     - git_ssh
+  schedule: "0 * * * *"
   models:
     - opus
   webhooks:
@@ -13,6 +14,7 @@ metadata:
       branches: [main]
   params:
     issueLabel: ci-failure
+    org: Action-Llama
 ---
 
 # GitHub Actions Responder
@@ -23,21 +25,39 @@ Your configuration is in the `<agent-config>` block at the start of your prompt.
 
 `GITHUB_TOKEN` is already set in your environment. Use `gh` CLI and `git` directly.
 
-## Trigger
+## Determine trigger mode and get failed runs
 
-This agent is triggered by `workflow_run` webhooks with action `completed`. Only act on **failed** runs — if the workflow conclusion is not `failure`, stop immediately.
+This agent runs in two modes: **webhook** (reacting to a single workflow_run event) and **scheduled** (scanning for recent failures).
 
-## Determine context from webhook
+### Webhook mode
 
-Extract from the `<webhook-trigger>` block:
+If a `<webhook-trigger>` block is present, extract from it:
 - `repo` — the repository (owner/repo)
-- The webhook payload contains the workflow run details
+- The workflow run ID from the trigger payload
 
-Set variables:
-- `REPO` = repo from the trigger
-- `RUN_ID` = the workflow run ID from the trigger payload
+Set variables and proceed to the workflow section with this single run:
+```
+export REPO="<repo from trigger>"
+export RUN_ID="<run ID from trigger>"
+```
 
-If there is no `<webhook-trigger>` block, stop — this agent only operates on webhook triggers.
+If the webhook trigger's conclusion is not `failure`, stop immediately.
+
+### Scheduled mode
+
+If there is no `<webhook-trigger>` block, scan for recent failed workflow runs on the `main` branch across all repos in the `<org>` from `<agent-config>`.
+
+For each repo in the org, list recent failed runs on main:
+```
+gh run list --repo <org>/<repo> --branch main --status failure --json databaseId,name,conclusion,headBranch,headSha,url,createdAt --limit 10
+```
+
+To discover repos, run:
+```
+gh repo list <org> --json nameWithOwner --limit 100 --no-archived -q '.[].nameWithOwner'
+```
+
+Filter to runs created within the last 2 hours (to avoid re-triaging old failures). For each failed run found, process it through the workflow below — setting `REPO` and `RUN_ID` for each one. Use `al-rerun` if there are more failures to process after the current batch.
 
 ## Setup — ensure labels exist
 
