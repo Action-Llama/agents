@@ -40,12 +40,15 @@ jobs:
       - name: Validate required secrets
         run: |
           echo "=== Validating required secrets ==="
+          echo "ℹ️  See README.md for detailed setup instructions"
+          echo ""
+          
+          MISSING_SECRETS=""
           
           # Check if ANTHROPIC_API_KEY is set and not empty
           if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             echo "❌ ERROR: ANTHROPIC_API_KEY repository secret is not set or is empty"
-            echo "Please set the ANTHROPIC_API_KEY secret in repository settings"
-            exit 1
+            MISSING_SECRETS="$MISSING_SECRETS ANTHROPIC_API_KEY"
           else
             echo "✅ ANTHROPIC_API_KEY secret is set"
           fi
@@ -53,18 +56,50 @@ jobs:
           # Check if DEPLOY_SSH_KEY is set  
           if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
             echo "❌ ERROR: DEPLOY_SSH_KEY repository secret is not set or is empty"
-            exit 1
+            MISSING_SECRETS="$MISSING_SECRETS DEPLOY_SSH_KEY"
           else
             echo "✅ DEPLOY_SSH_KEY secret is set"
+          fi
+          
+          # Check if DEPLOY_ENV_TOML is set
+          if [ -z "${{ secrets.DEPLOY_ENV_TOML }}" ]; then
+            echo "❌ ERROR: DEPLOY_ENV_TOML repository secret is not set or is empty"
+            MISSING_SECRETS="$MISSING_SECRETS DEPLOY_ENV_TOML"
+          else
+            echo "✅ DEPLOY_ENV_TOML secret is set"
           fi
           
           # Check if GITHUB_TOKEN is available
           if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
             echo "❌ ERROR: GITHUB_TOKEN is not available"
-            exit 1
+            MISSING_SECRETS="$MISSING_SECRETS GITHUB_TOKEN"
           else
             echo "✅ GITHUB_TOKEN is available"
           fi
+          
+          # If any secrets are missing, provide helpful guidance
+          if [ -n "$MISSING_SECRETS" ]; then
+            echo ""
+            echo "🔧 SETUP REQUIRED:"
+            echo "The following repository secrets need to be configured:"
+            for secret in $MISSING_SECRETS; do
+              echo "  • $secret"
+            done
+            echo ""
+            echo "📋 TO FIX THIS:"
+            echo "1. Repository administrators should go to:"
+            echo "   https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Add the missing secrets listed above"
+            echo "3. See README.md for details about each secret"
+            echo "4. Re-run this workflow after secrets are configured"
+            echo ""
+            echo "⚠️  This is a configuration issue that requires repository admin access."
+            echo "   It cannot be fixed through code changes alone."
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are configured and ready for deployment!"
 
       - name: Configure credentials for action-llama
         run: |
