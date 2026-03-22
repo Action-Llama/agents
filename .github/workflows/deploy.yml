@@ -48,7 +48,12 @@ jobs:
           # Configure SSH/Git credentials - use the deploy key  
           GIT_EMAIL="${{ vars.GIT_EMAIL }}"
           GIT_NAME="${{ vars.GIT_NAME }}"
-          printf '{"type":"git_ssh","privateKey":"%s","email":"%s","name":"%s"}\n' "${{ secrets.DEPLOY_SSH_KEY }}" "${GIT_EMAIL:-deploy@action-llama.com}" "${GIT_NAME:-Action Llama Deploy}" > ~/.action-llama/credentials/git_ssh.json
+          jq -n \
+            --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
+            --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
+            --arg name "${GIT_NAME:-Action Llama Deploy}" \
+            '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
+            > ~/.action-llama/credentials/git_ssh.json
           
           # Configure Anthropic API key 
           printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
