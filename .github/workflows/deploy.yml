@@ -37,32 +37,74 @@ jobs:
           mkdir -p ~/.action-llama/environments
           echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
 
+      - name: Validate required secrets
+        run: |
+          echo "=== Validating required secrets ==="
+          
+          # Check if ANTHROPIC_API_KEY is set and not empty
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "❌ ERROR: ANTHROPIC_API_KEY repository secret is not set or is empty"
+            echo "Please set the ANTHROPIC_API_KEY secret in repository settings"
+            exit 1
+          else
+            echo "✅ ANTHROPIC_API_KEY secret is set"
+          fi
+          
+          # Check if DEPLOY_SSH_KEY is set  
+          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "❌ ERROR: DEPLOY_SSH_KEY repository secret is not set or is empty"
+            exit 1
+          else
+            echo "✅ DEPLOY_SSH_KEY secret is set"
+          fi
+          
+          # Check if GITHUB_TOKEN is available
+          if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "❌ ERROR: GITHUB_TOKEN is not available"
+            exit 1
+          else
+            echo "✅ GITHUB_TOKEN is available"
+          fi
+
       - name: Configure credentials for action-llama
         run: |
-          # Set up the credential directory
+          # Set up the credential directory with multiple potential paths
           mkdir -p ~/.action-llama/credentials
+          mkdir -p /tmp/.action-llama/credentials
+          mkdir -p "$(pwd)/.action-llama/credentials"
           
-          # Configure GitHub token
-          printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > ~/.action-llama/credentials/github_token.json
+          # Function to create credentials in a specific directory
+          create_credentials() {
+            local cred_dir="$1"
+            echo "Creating credentials in: $cred_dir"
+            
+            # Configure GitHub token
+            printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
+            
+            # Configure SSH/Git credentials - use the deploy key  
+            GIT_EMAIL="${{ vars.GIT_EMAIL }}"
+            GIT_NAME="${{ vars.GIT_NAME }}"
+            jq -n \
+              --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
+              --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
+              --arg name "${GIT_NAME:-Action Llama Deploy}" \
+              '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
+              > "${cred_dir}/git_ssh.json"
+            
+            # Configure Anthropic API key 
+            printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+            
+            # Set proper permissions on all credential files
+            chmod 600 "${cred_dir}"/*.json
+            chmod 700 "${cred_dir}"
+          }
           
-          # Configure SSH/Git credentials - use the deploy key  
-          GIT_EMAIL="${{ vars.GIT_EMAIL }}"
-          GIT_NAME="${{ vars.GIT_NAME }}"
-          jq -n \
-            --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
-            --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
-            --arg name "${GIT_NAME:-Action Llama Deploy}" \
-            '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
-            > ~/.action-llama/credentials/git_ssh.json
+          # Create credentials in the standard location
+          create_credentials ~/.action-llama/credentials
           
-          # Configure Anthropic API key 
-          printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
-          
-          # Set proper permissions on all credential files
-          chmod 600 ~/.action-llama/credentials/*.json
-          
-          # Ensure the directory is accessible
-          chmod 700 ~/.action-llama/credentials
+          # Also create in alternative locations as fallbacks
+          create_credentials /tmp/.action-llama/credentials
+          create_credentials "$(pwd)/.action-llama/credentials"
 
       - name: Debug credentials and environment
         run: |
@@ -116,26 +158,28 @@ jobs:
         run: |
           echo "=== Credential validation ==="
           
-          # Check if al creds ls works
+          # Test credential detection in standard location
+          echo "Testing standard credential location..."
           if npx al creds ls; then
             echo "✅ al creds ls succeeded - credentials are readable"
           else
-            echo "❌ al creds ls failed - trying workarounds..."
+            echo "❌ al creds ls failed - trying alternative credential directories..."
             
-            # Try running with explicit HOME
-            echo "Trying with explicit HOME=$HOME"
-            HOME=$HOME npx al creds ls || echo "Still failed with explicit HOME"
+            # Test with explicit credential directory options
+            for cred_path in "/tmp/.action-llama/credentials" "$(pwd)/.action-llama/credentials"; do
+              echo "Testing credential path: $cred_path"
+              if [ -d "$cred_path" ]; then
+                # Try with different approaches to specify credential directory
+                ACTION_LLAMA_CREDS_DIR="$cred_path" npx al creds ls && echo "✅ Found working credential path: $cred_path" && break
+              fi
+            done
             
-            # Try running from home directory
-            echo "Trying from home directory"
-            cd ~ && npx al creds ls && cd - || echo "Still failed from home directory"
+            # If credential files still don't work, we'll rely on environment variables
+            echo "Setting up environment variables as credential fallback..."
+            export AL_GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            export AL_ANTHROPIC_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
             
-            # Show where al is looking for credentials
-            echo "=== Al CLI debug output ==="
-            npx al doctor --help 2>&1 | head -10 || true
-            
-            echo "❌ Credential validation failed - deploy will likely fail"
-            echo "Proceeding anyway to gather more diagnostic information..."
+            echo "✅ Environment variables configured as credential fallback"
           fi
 
       - name: Deploy
@@ -143,16 +187,80 @@ jobs:
           # Set environment variables as fallbacks for credentials
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AL_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Ensure proper Git SSH setup
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
+          # Try alternative credential directory paths
+          ACTION_LLAMA_CREDS_DIR: ~/.action-llama/credentials
         run: |
           echo "=== Final pre-deploy checks ==="
           echo "HOME: $HOME"
           echo "Current directory: $(pwd)"
           
-          # Verify credentials one more time
+          # Double-check that our secrets are actually populated
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "❌ FATAL: ANTHROPIC_API_KEY environment variable is empty"
+            exit 1
+          fi
+          
+          echo "✅ Required environment variables are set"
+          
+          # Try multiple approaches for credential detection
           echo "=== Final credential check ==="
-          npx al creds ls || echo "Credentials still not found - proceeding with environment variables"
+          CREDS_FOUND=false
+          
+          # Method 1: Standard location
+          if npx al creds ls >/dev/null 2>&1; then
+            echo "✅ Credentials found in standard location"
+            CREDS_FOUND=true
+          else
+            echo "❌ Standard credential location failed"
+            
+            # Method 2: Try alternative credential directories
+            for cred_path in "/tmp/.action-llama/credentials" "$(pwd)/.action-llama/credentials"; do
+              if [ -d "$cred_path" ]; then
+                echo "Trying credential path: $cred_path"
+                if ACTION_LLAMA_CREDS_DIR="$cred_path" npx al creds ls >/dev/null 2>&1; then
+                  echo "✅ Credentials found at: $cred_path"
+                  export ACTION_LLAMA_CREDS_DIR="$cred_path"
+                  CREDS_FOUND=true
+                  break
+                fi
+              fi
+            done
+          fi
+          
+          if [ "$CREDS_FOUND" = "false" ]; then
+            echo "⚠️  Credential files not detected by al CLI, relying on environment variables"
+            # Verify environment variables are set as fallback
+            if [ -n "$AL_GITHUB_TOKEN" ] && [ -n "$AL_ANTHROPIC_KEY" ]; then
+              echo "✅ Environment variable fallbacks are configured"
+            else
+              echo "❌ Neither credential files nor environment variables are working"
+              echo "This deploy will likely fail, but attempting anyway for diagnostic purposes"
+            fi
+          fi
           
           echo "=== Starting deploy ==="
-          npx al push --env prod --headless
+          # Try deploy with current credential configuration
+          npx al push --env prod --headless || {
+            echo "❌ Deploy failed with current credential setup"
+            echo "=== Diagnostic information ==="
+            echo "Credential directories checked:"
+            for path in ~/.action-llama/credentials /tmp/.action-llama/credentials "$(pwd)/.action-llama/credentials"; do
+              if [ -d "$path" ]; then
+                echo "  $path: $(ls -1 "$path" | wc -l) files"
+              else
+                echo "  $path: not found"
+              fi
+            done
+            echo "Environment variables:"
+            echo "  GITHUB_TOKEN: $([ -n "$GITHUB_TOKEN" ] && echo "set" || echo "not set")"
+            echo "  ANTHROPIC_API_KEY: $([ -n "$ANTHROPIC_API_KEY" ] && echo "set" || echo "not set")"
+            echo "  AL_GITHUB_TOKEN: $([ -n "$AL_GITHUB_TOKEN" ] && echo "set" || echo "not set")" 
+            echo "  AL_ANTHROPIC_KEY: $([ -n "$AL_ANTHROPIC_KEY" ] && echo "set" || echo "not set")"
+            exit 1
+          }
+          
+          echo "✅ Deploy completed successfully"
