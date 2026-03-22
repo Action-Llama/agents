@@ -5,7 +5,7 @@ metadata:
     - github_token
     - git_ssh
   models:
-    - sonnet
+    - opus
   webhooks:
     - source: github
       events: [workflow_run]
