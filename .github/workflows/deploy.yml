@@ -54,4 +54,8 @@ jobs:
           echo '{"type":"anthropic_key","key":"${{ secrets.ANTHROPIC_API_KEY }}"}' > ~/.action-llama/credentials/anthropic_key.json
 
       - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ANTHROPIC_KEY: dummy
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
         run: npx al push --env prod --headless --no-creds
