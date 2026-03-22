@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@action-llama/action-llama": "^0.14.1"
+    "@action-llama/action-llama": "github:Action-Llama/action-llama#main"
   }
 }
