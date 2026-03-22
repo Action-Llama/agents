@@ -43,15 +43,15 @@ jobs:
           mkdir -p ~/.action-llama/credentials
           
           # Configure GitHub token
-          printf '{"type":"github_token","token":"%s"}' "${{ secrets.GITHUB_TOKEN }}" > ~/.action-llama/credentials/github_token.json
+          printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > ~/.action-llama/credentials/github_token.json
           
           # Configure SSH/Git credentials - use the deploy key  
           GIT_EMAIL="${{ vars.GIT_EMAIL }}"
           GIT_NAME="${{ vars.GIT_NAME }}"
-          printf '{"type":"git_ssh","privateKey":"%s","email":"%s","name":"%s"}' "${{ secrets.DEPLOY_SSH_KEY }}" "${GIT_EMAIL:-deploy@action-llama.com}" "${GIT_NAME:-Action Llama Deploy}" > ~/.action-llama/credentials/git_ssh.json
+          printf '{"type":"git_ssh","privateKey":"%s","email":"%s","name":"%s"}\n' "${{ secrets.DEPLOY_SSH_KEY }}" "${GIT_EMAIL:-deploy@action-llama.com}" "${GIT_NAME:-Action Llama Deploy}" > ~/.action-llama/credentials/git_ssh.json
           
           # Configure Anthropic API key 
-          printf '{"type":"anthropic_key","key":"%s"}' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
+          printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
 
       - name: Deploy
         env:
