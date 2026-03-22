@@ -57,29 +57,104 @@ jobs:
           
           # Configure Anthropic API key 
           printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > ~/.action-llama/credentials/anthropic_key.json
+          
+          # Set proper permissions on all credential files
+          chmod 600 ~/.action-llama/credentials/*.json
+          
+          # Ensure the directory is accessible
+          chmod 700 ~/.action-llama/credentials
 
-      - name: Debug credentials
+      - name: Debug credentials and environment
         run: |
-          echo "=== Credential directory listing ==="
-          ls -la ~/.action-llama/credentials/
-          echo "=== Credential file contents (structure only) ==="
-          for file in ~/.action-llama/credentials/*.json; do
-            if [ -f "$file" ]; then
-              echo "--- $(basename "$file") ---"
-              # Show structure without exposing secrets
-              jq -r 'keys | join(", ")' "$file" 2>/dev/null || echo "Invalid JSON"
-            fi
-          done
           echo "=== Environment info ==="
           echo "HOME: $HOME"
           echo "PWD: $PWD"
-          echo "USER: $USER"
-          echo "=== Test al creds command ==="
-          npx al creds ls || echo "al creds ls failed"
+          echo "USER: $(whoami)"
+          echo "SHELL: $SHELL"
+          echo "PATH: $PATH"
+          
+          echo "=== Credential directory info ==="
+          echo "Expected path: ~/.action-llama/credentials"
+          echo "Resolved path: $HOME/.action-llama/credentials"
+          
+          if [ -d ~/.action-llama/credentials ]; then
+            echo "Directory exists: YES"
+            ls -la ~/.action-llama/credentials/
+            
+            echo "=== File permissions and content validation ==="
+            for file in ~/.action-llama/credentials/*.json; do
+              if [ -f "$file" ]; then
+                echo "--- $(basename "$file") ---"
+                echo "Permissions: $(ls -l "$file")"
+                echo "Size: $(stat -c%s "$file") bytes"
+                echo "Keys: $(jq -r 'keys | join(", ")' "$file" 2>/dev/null || echo "Invalid JSON")"
+                echo "Valid JSON: $(jq . "$file" >/dev/null 2>&1 && echo "YES" || echo "NO")"
+              fi
+            done
+          else
+            echo "Directory exists: NO"
+          fi
+          
+          echo "=== Test al CLI credential detection ==="
+          echo "Running: npx al creds ls"
+          npx al creds ls || echo "al creds ls failed with exit code $?"
+          
+          echo "=== Test al version ==="
+          npx al --version
+          
+          echo "=== Test alternative credential paths ==="
+          for path in "/tmp/.action-llama/credentials" "/home/runner/.action-llama/credentials" "$PWD/.action-llama/credentials"; do
+            echo "Checking path: $path"
+            if [ -d "$path" ]; then
+              echo "  Exists: YES, files: $(ls -1 "$path" 2>/dev/null | wc -l)"
+            else
+              echo "  Exists: NO"
+            fi
+          done
+
+      - name: Validate credentials before deploy
+        run: |
+          echo "=== Credential validation ==="
+          
+          # Check if al creds ls works
+          if npx al creds ls; then
+            echo "✅ al creds ls succeeded - credentials are readable"
+          else
+            echo "❌ al creds ls failed - trying workarounds..."
+            
+            # Try running with explicit HOME
+            echo "Trying with explicit HOME=$HOME"
+            HOME=$HOME npx al creds ls || echo "Still failed with explicit HOME"
+            
+            # Try running from home directory
+            echo "Trying from home directory"
+            cd ~ && npx al creds ls && cd - || echo "Still failed from home directory"
+            
+            # Show where al is looking for credentials
+            echo "=== Al CLI debug output ==="
+            npx al doctor --help 2>&1 | head -10 || true
+            
+            echo "❌ Credential validation failed - deploy will likely fail"
+            echo "Proceeding anyway to gather more diagnostic information..."
+          fi
 
       - name: Deploy
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          ANTHROPIC_KEY: dummy
-          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
-        run: npx al push --env prod --headless
+          # Set environment variables as fallbacks for credentials
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Ensure proper Git SSH setup
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
+          # Explicitly set HOME to ensure al CLI looks in the right place
+          HOME: ${{ env.HOME }}
+        run: |
+          echo "=== Final pre-deploy checks ==="
+          echo "HOME: $HOME"
+          echo "Current directory: $(pwd)"
+          
+          # Verify credentials one more time
+          echo "=== Final credential check ==="
+          npx al creds ls || echo "Credentials still not found - proceeding with environment variables"
+          
+          echo "=== Starting deploy ==="
+          npx al push --env prod --headless
