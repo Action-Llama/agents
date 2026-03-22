@@ -12,4 +12,5 @@ authType = "api_key"
 
 [webhooks.github]
 type = "github"
+allowUnsigned = true
 
