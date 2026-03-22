@@ -145,8 +145,6 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Ensure proper Git SSH setup
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
-          # Explicitly set HOME to ensure al CLI looks in the right place
-          HOME: ${{ env.HOME }}
         run: |
           echo "=== Final pre-deploy checks ==="
           echo "HOME: $HOME"
