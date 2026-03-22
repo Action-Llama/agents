@@ -37,5 +37,21 @@ jobs:
           mkdir -p ~/.action-llama/environments
           echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
 
+      - name: Configure credentials for action-llama
+        run: |
+          # Set up the credential directory
+          mkdir -p ~/.action-llama/credentials
+          
+          # Configure GitHub token
+          echo '{"type":"github_token","token":"${{ secrets.GITHUB_TOKEN }}"}' > ~/.action-llama/credentials/github_token.json
+          
+          # Configure SSH/Git credentials - use the deploy key  
+          GIT_EMAIL="${{ vars.GIT_EMAIL }}"
+          GIT_NAME="${{ vars.GIT_NAME }}"
+          echo '{"type":"git_ssh","privateKey":"${{ secrets.DEPLOY_SSH_KEY }}","email":"'${GIT_EMAIL:-deploy@action-llama.com}'","name":"'${GIT_NAME:-Action Llama Deploy}'"}' > ~/.action-llama/credentials/git_ssh.json
+          
+          # Configure Anthropic API key 
+          echo '{"type":"anthropic_key","key":"${{ secrets.ANTHROPIC_API_KEY }}"}' > ~/.action-llama/credentials/anthropic_key.json
+
       - name: Deploy
         run: npx al push --env prod --headless --no-creds
