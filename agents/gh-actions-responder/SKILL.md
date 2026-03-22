@@ -45,19 +45,23 @@ If the webhook trigger's conclusion is not `failure`, stop immediately.
 
 ### Scheduled mode
 
-If there is no `<webhook-trigger>` block, scan for recent failed workflow runs on the `main` branch across all repos in the `<org>` from `<agent-config>`.
-
-For each repo in the org, list recent failed runs on main:
-```
-gh run list --repo <org>/<repo> --branch main --status failure --json databaseId,name,conclusion,headBranch,headSha,url,createdAt --limit 10
-```
+If there is no `<webhook-trigger>` block, find workflows that are **currently broken** on the `main` branch across all repos in the `<org>` from `<agent-config>`.
 
 To discover repos, run:
 ```
 gh repo list <org> --json nameWithOwner --limit 100 --no-archived -q '.[].nameWithOwner'
 ```
 
-Filter to runs created within the last 2 hours (to avoid re-triaging old failures). For each failed run found, process it through the workflow below — setting `REPO` and `RUN_ID` for each one. Use `al-rerun` if there are more failures to process after the current batch.
+For each repo, list the most recent run of each workflow on main and check if any are failing. Use:
+```
+gh run list --repo <org>/<repo> --branch main --json databaseId,name,conclusion,headBranch,headSha,url,workflowName --limit 20
+```
+
+A workflow is **currently broken** if its most recent run on main has `conclusion: "failure"`. Group runs by workflow name and only look at the latest run per workflow. Ignore workflows whose latest run succeeded, was cancelled, or is still in progress.
+
+For each currently-broken workflow, process it through the workflow below — setting `REPO` and `RUN_ID` for each one. The "Check if failure is already tracked" step below will prevent duplicate issues. Use `al-rerun` if there are more failures to process after the current batch.
+
+If no workflows are currently broken, report that via `al-status` and stop.
 
 ## Setup — ensure labels exist
 
