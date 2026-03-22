@@ -58,4 +58,4 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           ANTHROPIC_KEY: dummy
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
-        run: npx al push --env prod --headless --no-creds
+        run: npx al push --env prod --headless
