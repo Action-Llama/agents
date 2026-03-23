@@ -108,8 +108,24 @@ jobs:
           # If any secrets are missing, provide enhanced guidance
           if [ -n "$MISSING_SECRETS" ]; then
             echo ""
-            echo "🔧 CONFIGURATION REQUIRED:"
-            echo "The following repository secrets need to be configured for deployment to succeed:"
+            
+            # Special case: Only ANTHROPIC_API_KEY is missing
+            if [ "$MISSING_SECRETS" = " ANTHROPIC_API_KEY" ] && [ "$SETUP_SCORE" = "3" ]; then
+              echo "🎯 QUICK FIX AVAILABLE: Only ANTHROPIC_API_KEY is missing!"
+              echo "   This is a 2-3 minute fix. Run: npm run ci-anthropic-key-fix"
+              echo ""
+              echo "🔧 OR MANUAL STEPS:"
+              echo "   1. Get API key: https://console.anthropic.com/account/keys"
+              echo "   2. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+              echo "   3. Add secret: ANTHROPIC_API_KEY = [your key]"
+              echo "   4. Re-run this workflow"
+              echo ""
+              echo "✨ Everything else is configured - just add the API key!"
+              echo ""
+            else
+              echo "🔧 CONFIGURATION REQUIRED:"
+              echo "The following repository secrets need to be configured for deployment to succeed:"
+            fi
             echo ""
             
             for secret in $MISSING_SECRETS; do
@@ -141,10 +157,11 @@ jobs:
             echo "🚀 FASTEST SETUP (recommended):"
             echo "   1. Clone repository locally"
             echo "   2. Set GitHub token: export GITHUB_TOKEN=your_token_here"
-            echo "   3. Run CI failure resolver: npm install && npm run resolve-ci-failure"
-            echo "   4. OR run quick setup: npm run quick-setup"
-            echo "   5. Follow the guided instructions"
-            echo "   6. Re-run this workflow"
+            echo "   3. Run targeted fix: npm install && npm run ci-anthropic-key-fix"
+            echo "   4. OR run CI failure resolver: npm run resolve-ci-failure"
+            echo "   5. OR run quick setup: npm run quick-setup"
+            echo "   6. Follow the guided instructions"
+            echo "   7. Re-run this workflow"
             echo ""
             echo "📋 MANUAL SETUP:"
             echo "   1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
