@@ -2,6 +2,23 @@
 
 This repository contains Action-Llama agents and their deployment configuration.
 
+## Quick Setup
+
+🚀 **New to this repository?** Get up and running fast:
+
+```bash
+# Install dependencies
+npm install
+
+# Set your GitHub token (get from: https://github.com/settings/tokens/new?scopes=repo)
+export GITHUB_TOKEN="your_github_token_here" 
+
+# Run the quick setup assistant
+npm run quick-setup
+```
+
+The quick setup will guide you through configuring all required secrets for deployment.
+
 ## Setup Requirements
 
 ### Repository Secrets
@@ -77,20 +94,34 @@ The deployment workflow runs automatically on pushes to `main`. It:
 - Commit with "dry-run" in the commit message, OR
 - Manually run the workflow and check "Run in dry-run mode"
 
-### Setup Validation
+### Setup Tools
 
-Before deploying, validate that all secrets are configured correctly:
+This repository includes comprehensive setup tools to make configuration easy:
 
 ```bash
-# Interactive setup assistant (recommended for first-time setup)
-GITHUB_TOKEN=your_github_token npm run setup
+# 🚀 Quick setup (fastest for first-time setup)
+npm run quick-setup
 
-# Test local workflow setup
+# 📊 Check current setup status  
+npm run status
+
+# 🧪 Test workflow setup locally
 npm run test-workflow
 
-# Validate repository secrets (requires GitHub token with repo scope)
-GITHUB_TOKEN=your_github_token npm run validate-secrets
+# 🔧 Interactive setup assistant (detailed guidance)
+npm run setup
+
+# ✅ Validate repository secrets
+npm run validate-secrets
+
+# 🛡️  Pre-commit check (prevent CI failures)
+npm run pre-commit
 ```
+
+**Recommended workflow:**
+1. Run `npm run quick-setup` for guided setup
+2. Use `npm run status` to check progress
+3. Run `npm run test-workflow` to validate before deploying
 
 **Dry-run mode**: Test the deployment workflow without all secrets configured:
 ```bash

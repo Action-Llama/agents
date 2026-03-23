@@ -59,10 +59,12 @@ jobs:
       - name: Validate required secrets
         run: |
           echo "=== Validating required secrets ==="
-          echo "ℹ️  See README.md for detailed setup instructions"
+          echo "ℹ️  Repository setup validation for Action-Llama deployment"
           echo ""
           
           MISSING_SECRETS=""
+          SETUP_SCORE=0
+          TOTAL_SECRETS=4
           
           # Check if ANTHROPIC_API_KEY is set and not empty
           if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
@@ -70,6 +72,7 @@ jobs:
             MISSING_SECRETS="$MISSING_SECRETS ANTHROPIC_API_KEY"
           else
             echo "✅ ANTHROPIC_API_KEY secret is set"
+            SETUP_SCORE=$((SETUP_SCORE + 1))
           fi
           
           # Check if DEPLOY_SSH_KEY is set  
@@ -78,6 +81,7 @@ jobs:
             MISSING_SECRETS="$MISSING_SECRETS DEPLOY_SSH_KEY"
           else
             echo "✅ DEPLOY_SSH_KEY secret is set"
+            SETUP_SCORE=$((SETUP_SCORE + 1))
           fi
           
           # Check if DEPLOY_ENV_TOML is set
@@ -86,6 +90,7 @@ jobs:
             MISSING_SECRETS="$MISSING_SECRETS DEPLOY_ENV_TOML"
           else
             echo "✅ DEPLOY_ENV_TOML secret is set"
+            SETUP_SCORE=$((SETUP_SCORE + 1))
           fi
           
           # Check if GITHUB_TOKEN is available
@@ -94,70 +99,97 @@ jobs:
             MISSING_SECRETS="$MISSING_SECRETS GITHUB_TOKEN"
           else
             echo "✅ GITHUB_TOKEN is available"
+            SETUP_SCORE=$((SETUP_SCORE + 1))
           fi
           
-          # If any secrets are missing, provide helpful guidance
+          echo ""
+          echo "📊 SETUP STATUS: ${SETUP_SCORE}/${TOTAL_SECRETS} secrets configured"
+          
+          # If any secrets are missing, provide enhanced guidance
           if [ -n "$MISSING_SECRETS" ]; then
             echo ""
-            echo "🔧 SETUP REQUIRED:"
-            echo "The following repository secrets need to be configured:"
+            echo "🔧 CONFIGURATION REQUIRED:"
+            echo "The following repository secrets need to be configured for deployment to succeed:"
+            echo ""
+            
             for secret in $MISSING_SECRETS; do
-              echo "  • $secret"
+              echo "🔑 $secret:"
               case $secret in
                 "ANTHROPIC_API_KEY")
-                  echo "    ├─ Get your API key from: https://console.anthropic.com/account/keys"
-                  echo "    └─ It should start with 'sk-ant-'"
+                  echo "   Purpose: API access for Claude AI models"
+                  echo "   Get key: https://console.anthropic.com/account/keys"
+                  echo "   Format: Starts with 'sk-ant-'"
                   ;;
                 "DEPLOY_SSH_KEY")
-                  echo "    ├─ Generate with: ssh-keygen -t rsa -b 4096 -C 'deploy@action-llama.com'"
-                  echo "    └─ See: https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
+                  echo "   Purpose: SSH access for deployment to production"
+                  echo "   Generate: ssh-keygen -t rsa -b 4096 -C 'deploy@action-llama.com'"
+                  echo "   Docs: https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
                   ;;
                 "DEPLOY_ENV_TOML")
-                  echo "    └─ Production environment configuration (TOML format)"
+                  echo "   Purpose: Production environment configuration"
+                  echo "   Format: TOML configuration file content"
+                  ;;
+                "GITHUB_TOKEN")
+                  echo "   Purpose: GitHub API access (usually automatic)"
+                  echo "   Note: This should be provided automatically by GitHub Actions"
                   ;;
               esac
+              echo ""
             done
-            echo ""
-            echo "🚀 QUICK SETUP:"
-            echo "   Run the interactive setup assistant:"
-            echo "   GITHUB_TOKEN=your_token npm run setup"
+            
+            echo "🚀 FASTEST SETUP (recommended):"
+            echo "   1. Clone repository locally"
+            echo "   2. Set GitHub token: export GITHUB_TOKEN=your_token_here"
+            echo "   3. Run quick setup: npm install && npm run quick-setup"
+            echo "   4. Follow the guided instructions"
+            echo "   5. Re-run this workflow"
             echo ""
             echo "📋 MANUAL SETUP:"
-            echo "1. Repository administrators should go to:"
-            echo "   https://github.com/${{ github.repository }}/settings/secrets/actions"
-            echo "2. Click 'New repository secret'"
-            echo "3. Add each missing secret listed above"
-            echo "4. Re-run this workflow after secrets are configured"
+            echo "   1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "   2. Click 'New repository secret'"
+            echo "   3. Add each missing secret listed above"
+            echo "   4. Verify setup: npm run status"
+            echo "   5. Re-run this workflow"
             echo ""
-            echo "📚 DETAILED GUIDES:"
-            echo "   • SETUP-CHECKLIST.md - Step-by-step setup guide"
-            echo "   • README.md - Complete setup documentation"
+            echo "🔍 VALIDATION TOOLS (run locally):"
+            echo "   npm run quick-setup     # Fast setup assistant"
+            echo "   npm run status          # Complete setup dashboard"
+            echo "   npm run test-workflow   # Test workflow components"
+            echo "   npm run setup           # Interactive setup guide"
             echo ""
-            echo "🔍 VALIDATION TOOLS:"
-            echo "   • Test setup: npm run test-workflow"
-            echo "   • Validate secrets: GITHUB_TOKEN=your_token npm run validate-secrets"
-            echo "   • Interactive setup: GITHUB_TOKEN=your_token npm run setup"
+            echo "💡 TEST WITHOUT FULL SETUP:"
+            echo "   Use dry-run mode to validate workflow structure:"
+            echo "   • Include 'dry-run' in commit message, OR"
+            echo "   • Manually trigger workflow and check 'Run in dry-run mode'"
+            echo "   This tests the workflow logic without requiring all secrets."
             echo ""
-            echo "💡 DRY RUN MODE:"
-            echo "   To test workflow components without deploying:"
-            echo "   • Add 'dry-run' to your commit message, OR"
-            echo "   • Set workflow input 'dry_run' to true when running manually"
+            echo "📚 DOCUMENTATION:"
+            echo "   • README.md - Complete setup guide"
+            echo "   • SETUP-CHECKLIST.md - Step-by-step checklist"
             echo ""
-            echo "⚠️  This is a configuration issue that requires repository admin access."
-            echo "   It cannot be fixed through code changes alone, but the tools above can help!"
+            echo "⚠️  REPOSITORY ADMIN REQUIRED:"
+            echo "   Adding repository secrets requires repository admin permissions."
+            echo "   If you don't have admin access, ask a repository administrator"
+            echo "   to run the setup process or add the missing secrets."
             
             # Enable dry-run mode if requested
             if [[ "${{ github.event.head_commit.message }}" =~ dry-run ]] || [[ "${{ inputs.dry_run }}" == "true" ]]; then
               echo ""
-              echo "🧪 DRY RUN MODE ENABLED - Continuing validation without actual deployment"
+              echo "🧪 DRY RUN MODE ENABLED"
+              echo "   Continuing workflow validation without actual deployment"
+              echo "   This tests workflow structure and processes"
               echo "DRY_RUN=true" >> $GITHUB_ENV
             else
+              echo ""
+              echo "❌ DEPLOYMENT BLOCKED: Missing required secrets"
+              echo "   Complete setup using the instructions above, then re-run this workflow."
               exit 1
             fi
+          else
+            echo ""
+            echo "✅ All required secrets are configured and ready for deployment!"
+            echo "🚀 Proceeding with deployment workflow..."
           fi
-          
-          echo ""
-          echo "✅ All required secrets are configured and ready for deployment!"
 
       - name: Configure credentials for action-llama
         run: |
