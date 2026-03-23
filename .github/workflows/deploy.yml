@@ -214,96 +214,75 @@ jobs:
 
       - name: Configure credentials for action-llama
         run: |
-          # Set up the credential directory with multiple potential paths
-          mkdir -p ~/.action-llama/credentials
-          mkdir -p /tmp/.action-llama/credentials
-          mkdir -p "$(pwd)/.action-llama/credentials"
+          # Create the credential directory that al CLI expects
+          # The al CLI v0.14.1+ only looks at ~/.action-llama/credentials and does not respect
+          # the ACTION_LLAMA_CREDS_DIR environment variable
+          CREDS_DIR="$HOME/.action-llama/credentials"
+          mkdir -p "$CREDS_DIR"
+          chmod 700 "$CREDS_DIR"
           
-          # Function to create credentials in a specific directory using the hierarchical format
-          # Note: Uses the new hierarchical format (type/instance/field) expected by al CLI v0.14.1+
-          # instead of the old flat JSON format to fix credential validation discrepancy
-          create_credentials() {
-            local cred_dir="$1"
-            echo "Creating credentials in: $cred_dir"
+          echo "Creating credentials in: $CREDS_DIR"
+          
+          # Function to create a credential field file
+          create_credential_field() {
+            local type="$1"
+            local instance="$2" 
+            local field="$3"
+            local value="$4"
             
-            # In dry-run mode with missing secrets, create placeholder files
-            if [ "$DRY_RUN" = "true" ]; then
-              # GitHub token credential (hierarchical format)
-              if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
-                mkdir -p "${cred_dir}/github_token/default"
-                echo "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token/default/token"
-                chmod 600 "${cred_dir}/github_token/default/token"
-              else
-                mkdir -p "${cred_dir}/github_token/default"
-                echo "dry-run-placeholder" > "${cred_dir}/github_token/default/token"
-                chmod 600 "${cred_dir}/github_token/default/token"
-              fi
-              
-              # SSH/Git credentials (hierarchical format)
-              if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-                GIT_EMAIL="${{ vars.GIT_EMAIL }}"
-                GIT_NAME="${{ vars.GIT_NAME }}"
-                mkdir -p "${cred_dir}/git_ssh/default"
-                echo "${{ secrets.DEPLOY_SSH_KEY }}" > "${cred_dir}/git_ssh/default/privateKey"
-                echo "${GIT_EMAIL:-deploy@action-llama.com}" > "${cred_dir}/git_ssh/default/email"
-                echo "${GIT_NAME:-Action Llama Deploy}" > "${cred_dir}/git_ssh/default/name"
-                chmod 600 "${cred_dir}/git_ssh/default/"*
-              else
-                mkdir -p "${cred_dir}/git_ssh/default"
-                echo "dry-run-placeholder" > "${cred_dir}/git_ssh/default/privateKey"
-                echo "deploy@action-llama.com" > "${cred_dir}/git_ssh/default/email"
-                echo "Action Llama Deploy" > "${cred_dir}/git_ssh/default/name"
-                chmod 600 "${cred_dir}/git_ssh/default/"*
-              fi
-              
-              # Anthropic API key (hierarchical format)
-              if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-                mkdir -p "${cred_dir}/anthropic_key/default"
-                echo "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key/default/key"
-                chmod 600 "${cred_dir}/anthropic_key/default/key"
-              else
-                echo "ℹ️  ANTHROPIC_API_KEY not set, skipping anthropic credential file (headless mode)"
-              fi
-            else
-              # Normal credential setup (hierarchical format)
-              
-              # Configure GitHub token
-              mkdir -p "${cred_dir}/github_token/default"
-              echo "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token/default/token"
-              chmod 600 "${cred_dir}/github_token/default/token"
-              
-              # Configure SSH/Git credentials - use the deploy key  
-              GIT_EMAIL="${{ vars.GIT_EMAIL }}"
-              GIT_NAME="${{ vars.GIT_NAME }}"
-              mkdir -p "${cred_dir}/git_ssh/default"
-              echo "${{ secrets.DEPLOY_SSH_KEY }}" > "${cred_dir}/git_ssh/default/privateKey"
-              echo "${GIT_EMAIL:-deploy@action-llama.com}" > "${cred_dir}/git_ssh/default/email"
-              echo "${GIT_NAME:-Action Llama Deploy}" > "${cred_dir}/git_ssh/default/name"
-              chmod 600 "${cred_dir}/git_ssh/default/"*
-              
-              # Configure Anthropic API key (only if provided)
-              if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-                mkdir -p "${cred_dir}/anthropic_key/default"
-                echo "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key/default/key"
-                chmod 600 "${cred_dir}/anthropic_key/default/key"
-                echo "✅ Anthropic API key configured"
-              else
-                echo "ℹ️  ANTHROPIC_API_KEY not provided, skipping (optional for headless deployments)"
-              fi
-            fi
+            local field_dir="$CREDS_DIR/$type/$instance"
+            mkdir -p "$field_dir"
+            chmod 700 "$field_dir"
             
-            # Set proper permissions on credential directories
-            chmod 700 "${cred_dir}"/*/default
-            chmod 700 "${cred_dir}"/*
-            chmod 700 "${cred_dir}"
+            echo -n "$value" > "$field_dir/$field"
+            chmod 600 "$field_dir/$field"
+            echo "  Created $type/$instance/$field"
           }
           
-          # Create credentials in the standard location
-          create_credentials ~/.action-llama/credentials
+          # Configure GitHub token credential
+          create_credential_field "github_token" "default" "token" "${{ secrets.GITHUB_TOKEN }}"
           
-          # Also create in alternative locations as fallbacks
-          create_credentials /tmp/.action-llama/credentials
-          create_credentials "$(pwd)/.action-llama/credentials"
+          # Configure SSH/Git credentials
+          GIT_EMAIL="${{ vars.GIT_EMAIL }}"
+          GIT_NAME="${{ vars.GIT_NAME }}"
+          
+          if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "🧪 DRY RUN: Creating placeholder SSH credentials"
+            create_credential_field "git_ssh" "default" "privateKey" "dry-run-placeholder"
+            create_credential_field "git_ssh" "default" "email" "${GIT_EMAIL:-deploy@action-llama.com}"
+            create_credential_field "git_ssh" "default" "name" "${GIT_NAME:-Action Llama Deploy}"
+          else
+            create_credential_field "git_ssh" "default" "privateKey" "${{ secrets.DEPLOY_SSH_KEY }}"
+            create_credential_field "git_ssh" "default" "email" "${GIT_EMAIL:-deploy@action-llama.com}"
+            create_credential_field "git_ssh" "default" "name" "${GIT_NAME:-Action Llama Deploy}"
+          fi
+          
+          # Configure Anthropic API key (only if provided)
+          if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            create_credential_field "anthropic_key" "default" "key" "${{ secrets.ANTHROPIC_API_KEY }}"
+            echo "✅ Anthropic API key configured"
+          else
+            echo "ℹ️  ANTHROPIC_API_KEY not provided, skipping (optional for headless deployments)"
+          fi
+          
+          # Verify credential structure
+          echo "=== Credential structure verification ==="
+          if [ -d "$CREDS_DIR" ]; then
+            echo "Credential types created:"
+            ls -la "$CREDS_DIR"
+            
+            for cred_type in github_token git_ssh anthropic_key; do
+              if [ -d "$CREDS_DIR/$cred_type" ]; then
+                echo "  $cred_type instances:"
+                ls -la "$CREDS_DIR/$cred_type/"
+                
+                if [ -d "$CREDS_DIR/$cred_type/default" ]; then
+                  echo "    default instance fields:"
+                  ls -la "$CREDS_DIR/$cred_type/default/"
+                fi
+              fi
+            done
+          fi
 
       - name: Debug credentials and environment
         run: |
@@ -311,104 +290,49 @@ jobs:
           echo "HOME: $HOME"
           echo "PWD: $PWD"
           echo "USER: $(whoami)"
-          echo "SHELL: $SHELL"
-          echo "PATH: $PATH"
+          echo "al CLI version: $(npx al --version)"
           
-          echo "=== Credential directory info ==="
-          echo "Expected path: ~/.action-llama/credentials"
-          echo "Resolved path: $HOME/.action-llama/credentials"
+          echo "=== Credential directory verification ==="
+          CREDS_DIR="$HOME/.action-llama/credentials"
+          echo "Credential directory: $CREDS_DIR"
           
-          if [ -d ~/.action-llama/credentials ]; then
-            echo "Directory exists: YES"
-            ls -la ~/.action-llama/credentials/
+          if [ -d "$CREDS_DIR" ]; then
+            echo "✅ Credential directory exists"
             
-            echo "=== Hierarchical credential structure validation ==="
-            for cred_type in github_token git_ssh anthropic_key; do
-              if [ -d ~/.action-llama/credentials/$cred_type ]; then
-                echo "--- $cred_type ---"
-                echo "Type directory exists: YES"
-                ls -la ~/.action-llama/credentials/$cred_type/
-                
-                if [ -d ~/.action-llama/credentials/$cred_type/default ]; then
-                  echo "Default instance exists: YES"
-                  echo "Files in default instance:"
-                  ls -la ~/.action-llama/credentials/$cred_type/default/
-                  
-                  echo "File contents (first 50 chars):"
-                  for file in ~/.action-llama/credentials/$cred_type/default/*; do
-                    if [ -f "$file" ]; then
-                      echo "  $(basename "$file"): $(head -c 50 "$file" | tr '\n' ' ')..."
-                    fi
-                  done
-                else
-                  echo "Default instance exists: NO"
-                fi
-              else
-                echo "--- $cred_type ---"
-                echo "Type directory exists: NO"
-              fi
-            done
-          else
-            echo "Directory exists: NO"
-          fi
-          
-          echo "=== Test al CLI credential detection ==="
-          echo "Running: npx al creds ls"
-          npx al creds ls || echo "al creds ls failed with exit code $?"
-          
-          echo "=== Test al version ==="
-          npx al --version
-          
-          echo "=== Test alternative credential paths ==="
-          for path in "/tmp/.action-llama/credentials" "/home/runner/.action-llama/credentials" "$PWD/.action-llama/credentials"; do
-            echo "Checking path: $path"
-            if [ -d "$path" ]; then
-              echo "  Exists: YES, credential types: $(ls -1 "$path" 2>/dev/null | wc -l)"
+            echo "=== Testing al CLI credential detection ==="
+            if npx al creds ls; then
+              echo "✅ al CLI successfully detected credentials"
             else
-              echo "  Exists: NO"
+              echo "❌ al CLI failed to detect credentials (exit code: $?)"
+              
+              echo "=== Debugging credential structure ==="
+              echo "Directory structure:"
+              find "$CREDS_DIR" -type f -exec ls -la {} \; 2>/dev/null || echo "No credential files found"
+              
+              echo "=== Checking file permissions ==="
+              find "$CREDS_DIR" -type d -exec echo "DIR: {} - $(stat -c '%a %U:%G' {})" \; 2>/dev/null || echo "Could not check directory permissions"
+              find "$CREDS_DIR" -type f -exec echo "FILE: {} - $(stat -c '%a %U:%G' {})" \; 2>/dev/null || echo "Could not check file permissions"
             fi
-          done
+          else
+            echo "❌ Credential directory does not exist: $CREDS_DIR"
+          fi
 
       - name: Validate credentials before deploy
         run: |
-          echo "=== Credential validation ==="
+          echo "=== Final credential validation ==="
           
-          # Test credential detection in standard location
-          echo "Testing standard credential location..."
           if npx al creds ls; then
-            echo "✅ al creds ls succeeded - credentials are readable"
+            echo "✅ Credential validation successful - al CLI can read credentials"
           else
-            echo "❌ al creds ls failed - trying alternative credential directories..."
-            
-            # Test with explicit credential directory options
-            for cred_path in "/tmp/.action-llama/credentials" "$(pwd)/.action-llama/credentials"; do
-              echo "Testing credential path: $cred_path"
-              if [ -d "$cred_path" ]; then
-                # Try with different approaches to specify credential directory
-                ACTION_LLAMA_CREDS_DIR="$cred_path" npx al creds ls && echo "✅ Found working credential path: $cred_path" && break
-              fi
-            done
-            
-            # If credential files still don't work, we'll rely on environment variables
-            echo "Setting up environment variables as credential fallback..."
-            export AL_GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-            export AL_ANTHROPIC_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
-            
-            echo "✅ Environment variables configured as credential fallback"
+            echo "❌ Credential validation failed - al CLI cannot read credentials"
+            echo "This indicates a problem with the credential file structure or permissions"
+            echo "Deploy will likely fail, but continuing for diagnostic purposes"
           fi
 
       - name: Deploy
         env:
-          # Set environment variables as fallbacks for credentials
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Only set Anthropic keys if the secret is provided (optional for headless deployments)
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
-          AL_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
-          # Ensure proper Git SSH setup
+          # Ensure proper Git SSH setup for deployment
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
-          # Try alternative credential directory paths
-          ACTION_LLAMA_CREDS_DIR: ~/.action-llama/credentials
         run: |
           # Check if we're in dry-run mode
           if [ "$DRY_RUN" = "true" ]; then
@@ -417,7 +341,7 @@ jobs:
             echo ""
             echo "📋 What was validated:"
             echo "  • Workflow structure and dependencies"
-            echo "  • SSH key setup process"
+            echo "  • SSH key setup process" 
             echo "  • Environment configuration process"
             echo "  • Credential configuration process"
             echo ""
@@ -428,88 +352,45 @@ jobs:
             exit 0
           fi
           
-          echo "=== Final pre-deploy checks ==="
-          echo "HOME: $HOME"
-          echo "Current directory: $(pwd)"
+          echo "=== Starting deployment ==="
           
-          # Check environment variables (ANTHROPIC_API_KEY is optional for headless deployments)
-          if [ -n "$ANTHROPIC_API_KEY" ]; then
-            echo "✅ ANTHROPIC_API_KEY is available"
+          # Deploy using al push with headless mode
+          # The al CLI will read credentials from ~/.action-llama/credentials
+          if npx al push --env prod --headless; then
+            echo "✅ Deploy completed successfully"
           else
-            echo "ℹ️  ANTHROPIC_API_KEY not provided (optional for headless deployments)"
-          fi
-          
-          echo "✅ Environment setup complete"
-          
-          # Try multiple approaches for credential detection
-          echo "=== Final credential check ==="
-          CREDS_FOUND=false
-          
-          # Method 1: Standard location
-          if npx al creds ls >/dev/null 2>&1; then
-            echo "✅ Credentials found in standard location"
-            CREDS_FOUND=true
-          else
-            echo "❌ Standard credential location failed"
+            echo "❌ Deploy failed"
             
-            # Method 2: Try alternative credential directories
-            for cred_path in "/tmp/.action-llama/credentials" "$(pwd)/.action-llama/credentials"; do
-              if [ -d "$cred_path" ]; then
-                echo "Trying credential path: $cred_path"
-                if ACTION_LLAMA_CREDS_DIR="$cred_path" npx al creds ls >/dev/null 2>&1; then
-                  echo "✅ Credentials found at: $cred_path"
-                  export ACTION_LLAMA_CREDS_DIR="$cred_path"
-                  CREDS_FOUND=true
-                  break
+            # Provide diagnostic information on failure
+            echo ""
+            echo "=== Deployment failure diagnostics ==="
+            echo "Credential directory status:"
+            CREDS_DIR="$HOME/.action-llama/credentials"
+            
+            if [ -d "$CREDS_DIR" ]; then
+              echo "✅ Credential directory exists: $CREDS_DIR"
+              
+              # Show credential types and instances
+              for cred_type in github_token git_ssh anthropic_key; do
+                if [ -d "$CREDS_DIR/$cred_type/default" ]; then
+                  field_count=$(ls -1 "$CREDS_DIR/$cred_type/default" 2>/dev/null | wc -l)
+                  echo "  ✅ $cred_type: $field_count field(s) configured"
+                else
+                  echo "  ❌ $cred_type: not configured"
                 fi
-              fi
-            done
-          fi
-          
-          if [ "$CREDS_FOUND" = "false" ]; then
-            echo "⚠️  Credential files not detected by al CLI, relying on environment variables"
-            # Verify environment variables are set as fallback (ANTHROPIC_API_KEY is optional)
-            if [ -n "$AL_GITHUB_TOKEN" ]; then
-              echo "✅ GitHub token environment variable is configured"
-              if [ -n "$AL_ANTHROPIC_KEY" ]; then
-                echo "✅ Anthropic API key environment variable is configured"
-              else
-                echo "ℹ️  Anthropic API key not provided (optional for headless deployments)"
-              fi
+              done
             else
-              echo "❌ GitHub token environment variable is missing"
-              echo "This deploy will likely fail, but attempting anyway for diagnostic purposes"
+              echo "❌ Credential directory missing: $CREDS_DIR"
             fi
-          fi
-          
-          echo "=== Starting deploy ==="
-          # Try deploy with current credential configuration
-          npx al push --env prod --headless || {
-            echo "❌ Deploy failed with current credential setup"
-            echo "=== Diagnostic information ==="
-            echo "Credential directories checked:"
-            for path in ~/.action-llama/credentials /tmp/.action-llama/credentials "$(pwd)/.action-llama/credentials"; do
-              if [ -d "$path" ]; then
-                cred_types=$(ls -1 "$path" 2>/dev/null | wc -l)
-                echo "  $path: $cred_types credential types"
-                for cred_type in github_token git_ssh anthropic_key; do
-                  if [ -d "$path/$cred_type/default" ]; then
-                    field_count=$(ls -1 "$path/$cred_type/default" 2>/dev/null | wc -l)
-                    echo "    - $cred_type: $field_count fields"
-                  else
-                    echo "    - $cred_type: missing"
-                  fi
-                done
-              else
-                echo "  $path: not found"
-              fi
-            done
-            echo "Environment variables:"
-            echo "  GITHUB_TOKEN: $([ -n "$GITHUB_TOKEN" ] && echo "set" || echo "not set")"
-            echo "  ANTHROPIC_API_KEY: $([ -n "$ANTHROPIC_API_KEY" ] && echo "set" || echo "not set (optional for headless)")"
-            echo "  AL_GITHUB_TOKEN: $([ -n "$AL_GITHUB_TOKEN" ] && echo "set" || echo "not set")" 
-            echo "  AL_ANTHROPIC_KEY: $([ -n "$AL_ANTHROPIC_KEY" ] && echo "set" || echo "not set (optional for headless)")"
+            
+            # Test credential detection one more time
+            echo ""
+            echo "Final credential detection test:"
+            if npx al creds ls; then
+              echo "✅ al CLI can detect credentials"
+            else
+              echo "❌ al CLI cannot detect credentials (this is the likely cause of deployment failure)"
+            fi
+            
             exit 1
-          }
-          
-          echo "✅ Deploy completed successfully"
+          fi
