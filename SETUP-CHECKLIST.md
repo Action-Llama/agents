@@ -68,15 +68,43 @@ These variables can be configured to customize deployment behavior:
 
 After configuring secrets, validate your setup:
 
-### Automated Validation
+### Local Testing
 
 ```bash
 # Install dependencies if needed
 npm install
 
-# Run validation script
-GITHUB_TOKEN=your_github_token node scripts/validate-secrets.js
+# Test workflow setup locally
+npm run test-workflow
+
+# Validate repository secrets
+GITHUB_TOKEN=your_github_token npm run validate-secrets
 ```
+
+### Dry-Run Mode (Test Without All Secrets)
+
+If you don't have all secrets configured yet, you can test the workflow in dry-run mode:
+
+```bash
+# Option 1: Commit with "dry-run" in the message
+git add .
+git commit -m "test: dry-run workflow validation"
+git push
+
+# Option 2: Manually trigger workflow
+# 1. Go to: https://github.com/Action-Llama/agents/actions
+# 2. Select "Deploy" workflow
+# 3. Click "Run workflow" 
+# 4. Check "Run in dry-run mode" checkbox
+# 5. Click "Run workflow" button
+```
+
+**What dry-run mode does:**
+- ✅ Validates workflow structure and dependencies
+- ✅ Tests SSH key and credential setup processes
+- ✅ Simulates deployment steps without actual deployment
+- ❌ Skips actual deployment to production
+- 💡 Shows exactly what secrets need to be configured
 
 ### Manual Validation
 

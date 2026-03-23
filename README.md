@@ -66,17 +66,34 @@ The deployment workflow runs automatically on pushes to `main`. It:
 **"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators should:
 1. Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
 2. Run the validation script: `GITHUB_TOKEN=your_token npm run validate-secrets`
-3. Re-run the deployment after fixing any issues
+3. Test the workflow setup: `npm run test-workflow`
+4. Re-run the deployment after fixing any issues
 
 **SSH/Deployment failures**: Check that `DEPLOY_SSH_KEY` and `DEPLOY_ENV_TOML` secrets are properly configured using the setup checklist.
+
+**Testing without full setup**: Use dry-run mode to test the workflow when secrets are missing:
+- Commit with "dry-run" in the commit message, OR
+- Manually run the workflow and check "Run in dry-run mode"
 
 ### Setup Validation
 
 Before deploying, validate that all secrets are configured correctly:
 
 ```bash
+# Test local workflow setup
+npm run test-workflow
+
 # Validate repository secrets (requires GitHub token with repo scope)
 GITHUB_TOKEN=your_github_token npm run validate-secrets
+```
+
+**Dry-run mode**: Test the deployment workflow without all secrets configured:
+```bash
+# Option 1: Commit with dry-run in the message
+git commit -m "test: dry-run workflow validation"
+
+# Option 2: Manually trigger workflow with dry-run enabled
+# Go to Actions → Deploy → Run workflow → Check "Run in dry-run mode"
 ```
 
 ## CI/CD
