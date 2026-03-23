@@ -63,12 +63,21 @@ The deployment workflow runs automatically on pushes to `main`. It:
 
 ### Troubleshooting Deployment
 
-**"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators need to:
-1. Go to [Repository Secrets](https://github.com/Action-Llama/agents/settings/secrets/actions)
-2. Add the `ANTHROPIC_API_KEY` secret with a valid Anthropic API key
-3. Re-run the deployment
+**"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators should:
+1. Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
+2. Run the validation script: `GITHUB_TOKEN=your_token npm run validate-secrets`
+3. Re-run the deployment after fixing any issues
 
-**SSH/Deployment failures**: Check that `DEPLOY_SSH_KEY` and `DEPLOY_ENV_TOML` secrets are properly configured.
+**SSH/Deployment failures**: Check that `DEPLOY_SSH_KEY` and `DEPLOY_ENV_TOML` secrets are properly configured using the setup checklist.
+
+### Setup Validation
+
+Before deploying, validate that all secrets are configured correctly:
+
+```bash
+# Validate repository secrets (requires GitHub token with repo scope)
+GITHUB_TOKEN=your_github_token npm run validate-secrets
+```
 
 ## CI/CD
 
