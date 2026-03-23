@@ -1,5 +1,11 @@
 ---
+name: dev
 description: Picks up GitHub issues and implements the requested changes
+credentials:
+  - github_token
+  - git_ssh
+models:
+  - sonnet
 metadata:
   credentials:
     - github_token

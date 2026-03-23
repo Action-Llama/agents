@@ -1,15 +1,21 @@
 ---
+name: reviewer
 description: Automatically reviews and merges pull requests after quality and security checks
+credentials:
+  - github_token
+  - git_ssh
+models:
+  - sonnet
 metadata:
-   credentials:
-   - github_token
-   - git_ssh
-   schedule: "0 * * * *"
-   scale: 2
-   timeout: 1800
-   models:
-   - sonnet
-   webhooks:
+  credentials:
+    - github_token
+    - git_ssh
+  schedule: "0 * * * *"
+  scale: 2
+  timeout: 1800
+  models:
+    - sonnet
+  webhooks:
     - source: github
       orgs: [Action-Llama]
       events: [pull_request]
@@ -18,9 +24,9 @@ metadata:
       orgs: [Action-Llama]
       events: [check_suite]
       actions: [completed]
-   params:
-      org: Action-Llama
-      author: asselstine
+  params:
+    org: Action-Llama
+    author: asselstine
 ---
 
 # Reviewer Agent

@@ -1,5 +1,11 @@
 ---
+name: planner
 description: Triages GitHub issues and creates detailed implementation plans
+credentials:
+  - github_token
+  - git_ssh
+models:
+  - opus
 metadata:
   credentials:
     - github_token

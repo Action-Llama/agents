@@ -1,12 +1,12 @@
 [models.sonnet]
 provider = "anthropic"
-model = "claude-sonnet-4-20250514"
+model = "claude-3-5-sonnet-20241022"
 thinkingLevel = "medium"
 authType = "api_key"
 
 [models.opus]
 provider = "anthropic"
-model = "claude-opus-4-20250514"
+model = "claude-3-opus-20240229"
 thinkingLevel = "xhigh"
 authType = "api_key"
 

@@ -358,7 +358,7 @@ jobs:
           
           # Deploy using al push with headless mode
           # The al CLI will read credentials from ~/.action-llama/credentials
-          if npx al push --env prod --headless; then
+          if npx al push --env prod --headless 2>&1; then
             echo "✅ Deploy completed successfully"
           else
             echo "❌ Deploy failed"
