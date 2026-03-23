@@ -51,9 +51,13 @@ jobs:
             echo "🧪 DRY RUN: Skipping environment config setup (secret not configured)"
             mkdir -p ~/.action-llama/environments
             echo "# Dry run - environment config would be configured here" > ~/.action-llama/environments/prod.toml
+            # Also create env.toml for backward compatibility
+            echo "# Dry run - environment config would be configured here" > env.toml
           else
             mkdir -p ~/.action-llama/environments
             echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
+            # Also create env.toml in the current directory for the deployment
+            echo '${{ secrets.DEPLOY_ENV_TOML }}' > env.toml
           fi
 
       - name: Validate required secrets
