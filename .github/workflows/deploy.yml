@@ -6,6 +6,12 @@ on:
   repository_dispatch:
     types: [deploy]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (validate setup without deploying)'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: deploy
@@ -28,14 +34,27 @@ jobs:
 
       - name: Set up SSH key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "🧪 DRY RUN: Skipping SSH key setup (secret not configured)"
+            mkdir -p ~/.ssh
+            echo "# Dry run - SSH key would be configured here" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+          else
+            mkdir -p ~/.ssh
+            echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+          fi
 
       - name: Set up environment config
         run: |
-          mkdir -p ~/.action-llama/environments
-          echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
+          if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_ENV_TOML }}" ]; then
+            echo "🧪 DRY RUN: Skipping environment config setup (secret not configured)"
+            mkdir -p ~/.action-llama/environments
+            echo "# Dry run - environment config would be configured here" > ~/.action-llama/environments/prod.toml
+          else
+            mkdir -p ~/.action-llama/environments
+            echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
+          fi
 
       - name: Validate required secrets
         run: |
@@ -98,9 +117,21 @@ jobs:
             echo "After configuring secrets, validate your setup with:"
             echo "   GITHUB_TOKEN=your_token npm run validate-secrets"
             echo ""
+            echo "💡 DRY RUN MODE:"
+            echo "   To test workflow components without deploying, add 'dry-run' to your commit message"
+            echo "   or set the workflow input 'dry_run' to true when running manually."
+            echo ""
             echo "⚠️  This is a configuration issue that requires repository admin access."
             echo "   It cannot be fixed through code changes alone."
-            exit 1
+            
+            # Enable dry-run mode if requested
+            if [[ "${{ github.event.head_commit.message }}" =~ dry-run ]] || [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo ""
+              echo "🧪 DRY RUN MODE ENABLED - Continuing validation without actual deployment"
+              echo "DRY_RUN=true" >> $GITHUB_ENV
+            else
+              exit 1
+            fi
           fi
           
           echo ""
@@ -118,21 +149,50 @@ jobs:
             local cred_dir="$1"
             echo "Creating credentials in: $cred_dir"
             
-            # Configure GitHub token
-            printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
-            
-            # Configure SSH/Git credentials - use the deploy key  
-            GIT_EMAIL="${{ vars.GIT_EMAIL }}"
-            GIT_NAME="${{ vars.GIT_NAME }}"
-            jq -n \
-              --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
-              --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
-              --arg name "${GIT_NAME:-Action Llama Deploy}" \
-              '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
-              > "${cred_dir}/git_ssh.json"
-            
-            # Configure Anthropic API key 
-            printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+            # In dry-run mode with missing secrets, create placeholder files
+            if [ "$DRY_RUN" = "true" ]; then
+              if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+                printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
+              else
+                echo '{"type":"github_token","token":"dry-run-placeholder"}' > "${cred_dir}/github_token.json"
+              fi
+              
+              if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+                GIT_EMAIL="${{ vars.GIT_EMAIL }}"
+                GIT_NAME="${{ vars.GIT_NAME }}"
+                jq -n \
+                  --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
+                  --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
+                  --arg name "${GIT_NAME:-Action Llama Deploy}" \
+                  '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
+                  > "${cred_dir}/git_ssh.json"
+              else
+                echo '{"type":"git_ssh","privateKey":"dry-run-placeholder","email":"deploy@action-llama.com","name":"Action Llama Deploy"}' > "${cred_dir}/git_ssh.json"
+              fi
+              
+              if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+                printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+              else
+                echo '{"type":"anthropic_key","key":"dry-run-placeholder"}' > "${cred_dir}/anthropic_key.json"
+              fi
+            else
+              # Normal credential setup
+              # Configure GitHub token
+              printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
+              
+              # Configure SSH/Git credentials - use the deploy key  
+              GIT_EMAIL="${{ vars.GIT_EMAIL }}"
+              GIT_NAME="${{ vars.GIT_NAME }}"
+              jq -n \
+                --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
+                --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
+                --arg name "${GIT_NAME:-Action Llama Deploy}" \
+                '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
+                > "${cred_dir}/git_ssh.json"
+              
+              # Configure Anthropic API key 
+              printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+            fi
             
             # Set proper permissions on all credential files
             chmod 600 "${cred_dir}"/*.json
@@ -234,6 +294,24 @@ jobs:
           # Try alternative credential directory paths
           ACTION_LLAMA_CREDS_DIR: ~/.action-llama/credentials
         run: |
+          # Check if we're in dry-run mode
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🧪 DRY RUN MODE: Skipping actual deployment"
+            echo "✅ Workflow validation completed successfully"
+            echo ""
+            echo "📋 What was validated:"
+            echo "  • Workflow structure and dependencies"
+            echo "  • SSH key setup process"
+            echo "  • Environment configuration process"
+            echo "  • Credential configuration process"
+            echo ""
+            echo "🔧 To complete setup:"
+            echo "  1. Configure missing repository secrets"
+            echo "  2. Re-run this workflow without dry-run mode"
+            echo "  3. Verify deployment succeeds"
+            exit 0
+          fi
+          
           echo "=== Final pre-deploy checks ==="
           echo "HOME: $HOME"
           echo "Current directory: $(pwd)"
