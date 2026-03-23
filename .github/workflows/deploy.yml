@@ -103,26 +103,48 @@ jobs:
             echo "The following repository secrets need to be configured:"
             for secret in $MISSING_SECRETS; do
               echo "  • $secret"
+              case $secret in
+                "ANTHROPIC_API_KEY")
+                  echo "    ├─ Get your API key from: https://console.anthropic.com/account/keys"
+                  echo "    └─ It should start with 'sk-ant-'"
+                  ;;
+                "DEPLOY_SSH_KEY")
+                  echo "    ├─ Generate with: ssh-keygen -t rsa -b 4096 -C 'deploy@action-llama.com'"
+                  echo "    └─ See: https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
+                  ;;
+                "DEPLOY_ENV_TOML")
+                  echo "    └─ Production environment configuration (TOML format)"
+                  ;;
+              esac
             done
             echo ""
-            echo "📋 TO FIX THIS:"
+            echo "🚀 QUICK SETUP:"
+            echo "   Run the interactive setup assistant:"
+            echo "   GITHUB_TOKEN=your_token npm run setup"
+            echo ""
+            echo "📋 MANUAL SETUP:"
             echo "1. Repository administrators should go to:"
             echo "   https://github.com/${{ github.repository }}/settings/secrets/actions"
-            echo "2. Add the missing secrets listed above"
-            echo "3. See SETUP-CHECKLIST.md for step-by-step instructions"
-            echo "4. See README.md for details about each secret"
-            echo "5. Re-run this workflow after secrets are configured"
+            echo "2. Click 'New repository secret'"
+            echo "3. Add each missing secret listed above"
+            echo "4. Re-run this workflow after secrets are configured"
             echo ""
-            echo "🔍 VALIDATION:"
-            echo "After configuring secrets, validate your setup with:"
-            echo "   GITHUB_TOKEN=your_token npm run validate-secrets"
+            echo "📚 DETAILED GUIDES:"
+            echo "   • SETUP-CHECKLIST.md - Step-by-step setup guide"
+            echo "   • README.md - Complete setup documentation"
+            echo ""
+            echo "🔍 VALIDATION TOOLS:"
+            echo "   • Test setup: npm run test-workflow"
+            echo "   • Validate secrets: GITHUB_TOKEN=your_token npm run validate-secrets"
+            echo "   • Interactive setup: GITHUB_TOKEN=your_token npm run setup"
             echo ""
             echo "💡 DRY RUN MODE:"
-            echo "   To test workflow components without deploying, add 'dry-run' to your commit message"
-            echo "   or set the workflow input 'dry_run' to true when running manually."
+            echo "   To test workflow components without deploying:"
+            echo "   • Add 'dry-run' to your commit message, OR"
+            echo "   • Set workflow input 'dry_run' to true when running manually"
             echo ""
             echo "⚠️  This is a configuration issue that requires repository admin access."
-            echo "   It cannot be fixed through code changes alone."
+            echo "   It cannot be fixed through code changes alone, but the tools above can help!"
             
             # Enable dry-run mode if requested
             if [[ "${{ github.event.head_commit.message }}" =~ dry-run ]] || [[ "${{ inputs.dry_run }}" == "true" ]]; then
