@@ -81,13 +81,14 @@ The deployment workflow runs automatically on pushes to `main`. It:
 ### Troubleshooting Deployment
 
 **"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators should:
-1. **Fastest fix**: Run the CI failure resolver: `GITHUB_TOKEN=your_token npm run resolve-ci-failure`
-2. **Interactive setup**: Run the setup assistant: `GITHUB_TOKEN=your_token npm run setup`
-3. **Manual setup**: Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
-4. **Validation**: Run validation tools after setup:
+1. **Quick fix**: Run the focused fix tool: `GITHUB_TOKEN=your_token npm run fix-anthropic-key`
+2. **General CI issues**: Run the CI failure resolver: `GITHUB_TOKEN=your_token npm run resolve-ci-failure`
+3. **Interactive setup**: Run the setup assistant: `GITHUB_TOKEN=your_token npm run setup`
+4. **Manual setup**: Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
+5. **Validation**: Run validation tools after setup:
    - `npm run test-workflow` - Test workflow setup
    - `GITHUB_TOKEN=your_token npm run validate-secrets` - Validate repository secrets
-5. Re-run the deployment after fixing any issues
+6. Re-run the deployment after fixing any issues
 
 **SSH/Deployment failures**: Check that `DEPLOY_SSH_KEY` and `DEPLOY_ENV_TOML` secrets are properly configured using the setup checklist.
 
@@ -102,6 +103,9 @@ This repository includes comprehensive setup tools to make configuration easy:
 ```bash
 # 🚀 Quick setup (fastest for first-time setup)
 npm run quick-setup
+
+# 🔑 Fix missing ANTHROPIC_API_KEY (most common issue)
+npm run fix-anthropic-key
 
 # 📊 Check current setup status  
 npm run status

@@ -39,6 +39,13 @@ const CI_FAILURE_PATTERNS = {
     solution: 'ANTHROPIC_API_KEY',
     priority: 'CRITICAL'
   },
+  ONLY_ANTHROPIC_KEY_MISSING: {
+    pattern: /ANTHROPIC_API_KEY.*not set.*DEPLOY_SSH_KEY.*is set.*DEPLOY_ENV_TOML.*is set/i,
+    title: 'Only ANTHROPIC_API_KEY Missing (Quick Fix Available)',
+    description: 'Most configuration is complete - only the ANTHROPIC_API_KEY needs to be added.',
+    solution: 'ANTHROPIC_API_KEY_ONLY',
+    priority: 'HIGH'
+  },
   MISSING_DEPLOY_SSH: {
     pattern: /DEPLOY_SSH_KEY.*not set|SSH.*authentication.*failed/i,
     title: 'Missing or Invalid DEPLOY_SSH_KEY',
@@ -74,6 +81,21 @@ const SECRET_SOLUTIONS = {
       '5. Name: ANTHROPIC_API_KEY',
       '6. Value: [paste your API key]',
       '7. Click "Add secret"'
+    ],
+    validation: 'ANTHROPIC_API_KEY'
+  },
+  'ANTHROPIC_API_KEY_ONLY': {
+    name: 'ANTHROPIC_API_KEY (Quick Fix)',
+    description: 'Only the Anthropic API key is missing - this is a quick 2-minute fix!',
+    steps: [
+      '🚀 FASTEST OPTION: Use the dedicated fix tool',
+      '   npm run fix-anthropic-key',
+      '',
+      '📝 OR MANUAL STEPS:',
+      '1. Get API key: https://console.anthropic.com/account/keys',
+      '2. Go to: {repo_url}/settings/secrets/actions', 
+      '3. Add secret: ANTHROPIC_API_KEY with your key value',
+      '4. Re-run the workflow - deployment will start automatically!'
     ],
     validation: 'ANTHROPIC_API_KEY'
   },
