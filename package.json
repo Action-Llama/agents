@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "validate-secrets": "node scripts/validate-secrets.js",
-    "test-workflow": "node scripts/test-deploy-workflow.js"
+    "test-workflow": "node scripts/test-deploy-workflow.js",
+    "setup": "node scripts/setup-assistant.js"
   },
   "dependencies": {
     "@action-llama/action-llama": "^0.14.1"

@@ -2,6 +2,27 @@
 
 This checklist helps repository administrators ensure all required configuration is in place for successful deployments.
 
+## 🚀 Quick Setup (Recommended)
+
+For an interactive setup experience, use the setup assistant:
+
+```bash
+# Set your GitHub token (requires 'repo' scope)
+export GITHUB_TOKEN="your_github_token_here"
+
+# Run the interactive setup assistant
+npm install
+npm run setup
+```
+
+The setup assistant will:
+- ✅ Check current secret configuration
+- 📝 Guide you through configuring missing secrets
+- 🔍 Validate your setup when complete
+- 🧪 Optionally test the deployment workflow
+
+## 📋 Manual Setup
+
 ## Required Repository Secrets
 
 The following secrets **must** be configured for the deployment workflow to succeed:
