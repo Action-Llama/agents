@@ -356,12 +356,24 @@ jobs:
           
           echo "=== Starting deployment ==="
           
+          # Check if env.toml exists before deployment
+          if [ ! -f env.toml ]; then
+            echo "❌ ERROR: env.toml not found in current directory"
+            echo "This file should have been created in the 'Set up environment config' step"
+            exit 1
+          fi
+          
           # Deploy using al push with headless mode
           # The al CLI will read credentials from ~/.action-llama/credentials
-          if npx al push --env prod --headless; then
+          echo "Running: npx al push --env prod --headless"
+          if npx al push --env prod --headless 2>&1 | tee deploy.log; then
             echo "✅ Deploy completed successfully"
           else
-            echo "❌ Deploy failed"
+            EXIT_CODE=$?
+            echo "❌ Deploy failed with exit code: $EXIT_CODE"
+            echo ""
+            echo "=== Deploy output ==="
+            cat deploy.log || true
             
             # Provide diagnostic information on failure
             echo ""
