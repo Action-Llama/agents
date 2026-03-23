@@ -64,15 +64,15 @@ jobs:
           
           MISSING_SECRETS=""
           SETUP_SCORE=0
-          TOTAL_SECRETS=4
+          TOTAL_SECRETS=3
+          OPTIONAL_SECRETS=0
           
-          # Check if ANTHROPIC_API_KEY is set and not empty
+          # Check if ANTHROPIC_API_KEY is set (optional for headless deployments)
           if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-            echo "❌ ERROR: ANTHROPIC_API_KEY repository secret is not set or is empty"
-            MISSING_SECRETS="$MISSING_SECRETS ANTHROPIC_API_KEY"
+            echo "⚠️  INFO: ANTHROPIC_API_KEY repository secret is not set (optional for headless deployments)"
           else
             echo "✅ ANTHROPIC_API_KEY secret is set"
-            SETUP_SCORE=$((SETUP_SCORE + 1))
+            OPTIONAL_SECRETS=$((OPTIONAL_SECRETS + 1))
           fi
           
           # Check if DEPLOY_SSH_KEY is set  
@@ -103,7 +103,7 @@ jobs:
           fi
           
           echo ""
-          echo "📊 SETUP STATUS: ${SETUP_SCORE}/${TOTAL_SECRETS} secrets configured"
+          echo "📊 SETUP STATUS: ${SETUP_SCORE}/${TOTAL_SECRETS} required secrets configured, ${OPTIONAL_SECRETS}/1 optional secrets configured"
           
           # If any secrets are missing, provide enhanced guidance
           if [ -n "$MISSING_SECRETS" ]; then
@@ -116,9 +116,10 @@ jobs:
               echo "🔑 $secret:"
               case $secret in
                 "ANTHROPIC_API_KEY")
-                  echo "   Purpose: API access for Claude AI models"
+                  echo "   Purpose: API access for Claude AI models (optional for headless deployments)"
                   echo "   Get key: https://console.anthropic.com/account/keys"
                   echo "   Format: Starts with 'sk-ant-'"
+                  echo "   Note: This deployment uses --headless mode, so this key is optional"
                   ;;
                 "DEPLOY_SSH_KEY")
                   echo "   Purpose: SSH access for deployment to production"
@@ -229,7 +230,7 @@ jobs:
               if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
                 printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
               else
-                echo '{"type":"anthropic_key","key":"dry-run-placeholder"}' > "${cred_dir}/anthropic_key.json"
+                echo "ℹ️  ANTHROPIC_API_KEY not set, skipping anthropic credential file (headless mode)"
               fi
             else
               # Normal credential setup
@@ -246,8 +247,13 @@ jobs:
                 '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
                 > "${cred_dir}/git_ssh.json"
               
-              # Configure Anthropic API key 
-              printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+              # Configure Anthropic API key (only if provided)
+              if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+                printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+                echo "✅ Anthropic API key configured"
+              else
+                echo "ℹ️  ANTHROPIC_API_KEY not provided, skipping (optional for headless deployments)"
+              fi
             fi
             
             # Set proper permissions on all credential files
@@ -342,9 +348,10 @@ jobs:
         env:
           # Set environment variables as fallbacks for credentials
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           AL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AL_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Only set Anthropic keys if the secret is provided (optional for headless deployments)
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
+          AL_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
           # Ensure proper Git SSH setup
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
           # Try alternative credential directory paths
@@ -372,13 +379,14 @@ jobs:
           echo "HOME: $HOME"
           echo "Current directory: $(pwd)"
           
-          # Double-check that our secrets are actually populated
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "❌ FATAL: ANTHROPIC_API_KEY environment variable is empty"
-            exit 1
+          # Check environment variables (ANTHROPIC_API_KEY is optional for headless deployments)
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "✅ ANTHROPIC_API_KEY is available"
+          else
+            echo "ℹ️  ANTHROPIC_API_KEY not provided (optional for headless deployments)"
           fi
           
-          echo "✅ Required environment variables are set"
+          echo "✅ Environment setup complete"
           
           # Try multiple approaches for credential detection
           echo "=== Final credential check ==="
@@ -407,11 +415,16 @@ jobs:
           
           if [ "$CREDS_FOUND" = "false" ]; then
             echo "⚠️  Credential files not detected by al CLI, relying on environment variables"
-            # Verify environment variables are set as fallback
-            if [ -n "$AL_GITHUB_TOKEN" ] && [ -n "$AL_ANTHROPIC_KEY" ]; then
-              echo "✅ Environment variable fallbacks are configured"
+            # Verify environment variables are set as fallback (ANTHROPIC_API_KEY is optional)
+            if [ -n "$AL_GITHUB_TOKEN" ]; then
+              echo "✅ GitHub token environment variable is configured"
+              if [ -n "$AL_ANTHROPIC_KEY" ]; then
+                echo "✅ Anthropic API key environment variable is configured"
+              else
+                echo "ℹ️  Anthropic API key not provided (optional for headless deployments)"
+              fi
             else
-              echo "❌ Neither credential files nor environment variables are working"
+              echo "❌ GitHub token environment variable is missing"
               echo "This deploy will likely fail, but attempting anyway for diagnostic purposes"
             fi
           fi
@@ -431,9 +444,9 @@ jobs:
             done
             echo "Environment variables:"
             echo "  GITHUB_TOKEN: $([ -n "$GITHUB_TOKEN" ] && echo "set" || echo "not set")"
-            echo "  ANTHROPIC_API_KEY: $([ -n "$ANTHROPIC_API_KEY" ] && echo "set" || echo "not set")"
+            echo "  ANTHROPIC_API_KEY: $([ -n "$ANTHROPIC_API_KEY" ] && echo "set" || echo "not set (optional for headless)")"
             echo "  AL_GITHUB_TOKEN: $([ -n "$AL_GITHUB_TOKEN" ] && echo "set" || echo "not set")" 
-            echo "  AL_ANTHROPIC_KEY: $([ -n "$AL_ANTHROPIC_KEY" ] && echo "set" || echo "not set")"
+            echo "  AL_ANTHROPIC_KEY: $([ -n "$AL_ANTHROPIC_KEY" ] && echo "set" || echo "not set (optional for headless)")"
             exit 1
           }
           
