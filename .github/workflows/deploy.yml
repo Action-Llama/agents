@@ -219,63 +219,82 @@ jobs:
           mkdir -p /tmp/.action-llama/credentials
           mkdir -p "$(pwd)/.action-llama/credentials"
           
-          # Function to create credentials in a specific directory
+          # Function to create credentials in a specific directory using the hierarchical format
+          # Note: Uses the new hierarchical format (type/instance/field) expected by al CLI v0.14.1+
+          # instead of the old flat JSON format to fix credential validation discrepancy
           create_credentials() {
             local cred_dir="$1"
             echo "Creating credentials in: $cred_dir"
             
             # In dry-run mode with missing secrets, create placeholder files
             if [ "$DRY_RUN" = "true" ]; then
+              # GitHub token credential (hierarchical format)
               if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
-                printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
+                mkdir -p "${cred_dir}/github_token/default"
+                echo "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token/default/token"
+                chmod 600 "${cred_dir}/github_token/default/token"
               else
-                echo '{"type":"github_token","token":"dry-run-placeholder"}' > "${cred_dir}/github_token.json"
+                mkdir -p "${cred_dir}/github_token/default"
+                echo "dry-run-placeholder" > "${cred_dir}/github_token/default/token"
+                chmod 600 "${cred_dir}/github_token/default/token"
               fi
               
+              # SSH/Git credentials (hierarchical format)
               if [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
                 GIT_EMAIL="${{ vars.GIT_EMAIL }}"
                 GIT_NAME="${{ vars.GIT_NAME }}"
-                jq -n \
-                  --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
-                  --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
-                  --arg name "${GIT_NAME:-Action Llama Deploy}" \
-                  '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
-                  > "${cred_dir}/git_ssh.json"
+                mkdir -p "${cred_dir}/git_ssh/default"
+                echo "${{ secrets.DEPLOY_SSH_KEY }}" > "${cred_dir}/git_ssh/default/privateKey"
+                echo "${GIT_EMAIL:-deploy@action-llama.com}" > "${cred_dir}/git_ssh/default/email"
+                echo "${GIT_NAME:-Action Llama Deploy}" > "${cred_dir}/git_ssh/default/name"
+                chmod 600 "${cred_dir}/git_ssh/default/"*
               else
-                echo '{"type":"git_ssh","privateKey":"dry-run-placeholder","email":"deploy@action-llama.com","name":"Action Llama Deploy"}' > "${cred_dir}/git_ssh.json"
+                mkdir -p "${cred_dir}/git_ssh/default"
+                echo "dry-run-placeholder" > "${cred_dir}/git_ssh/default/privateKey"
+                echo "deploy@action-llama.com" > "${cred_dir}/git_ssh/default/email"
+                echo "Action Llama Deploy" > "${cred_dir}/git_ssh/default/name"
+                chmod 600 "${cred_dir}/git_ssh/default/"*
               fi
               
+              # Anthropic API key (hierarchical format)
               if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-                printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+                mkdir -p "${cred_dir}/anthropic_key/default"
+                echo "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key/default/key"
+                chmod 600 "${cred_dir}/anthropic_key/default/key"
               else
                 echo "ℹ️  ANTHROPIC_API_KEY not set, skipping anthropic credential file (headless mode)"
               fi
             else
-              # Normal credential setup
+              # Normal credential setup (hierarchical format)
+              
               # Configure GitHub token
-              printf '{"type":"github_token","token":"%s"}\n' "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token.json"
+              mkdir -p "${cred_dir}/github_token/default"
+              echo "${{ secrets.GITHUB_TOKEN }}" > "${cred_dir}/github_token/default/token"
+              chmod 600 "${cred_dir}/github_token/default/token"
               
               # Configure SSH/Git credentials - use the deploy key  
               GIT_EMAIL="${{ vars.GIT_EMAIL }}"
               GIT_NAME="${{ vars.GIT_NAME }}"
-              jq -n \
-                --arg key "${{ secrets.DEPLOY_SSH_KEY }}" \
-                --arg email "${GIT_EMAIL:-deploy@action-llama.com}" \
-                --arg name "${GIT_NAME:-Action Llama Deploy}" \
-                '{"type":"git_ssh","privateKey":$key,"email":$email,"name":$name}' \
-                > "${cred_dir}/git_ssh.json"
+              mkdir -p "${cred_dir}/git_ssh/default"
+              echo "${{ secrets.DEPLOY_SSH_KEY }}" > "${cred_dir}/git_ssh/default/privateKey"
+              echo "${GIT_EMAIL:-deploy@action-llama.com}" > "${cred_dir}/git_ssh/default/email"
+              echo "${GIT_NAME:-Action Llama Deploy}" > "${cred_dir}/git_ssh/default/name"
+              chmod 600 "${cred_dir}/git_ssh/default/"*
               
               # Configure Anthropic API key (only if provided)
               if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-                printf '{"type":"anthropic_key","key":"%s"}\n' "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key.json"
+                mkdir -p "${cred_dir}/anthropic_key/default"
+                echo "${{ secrets.ANTHROPIC_API_KEY }}" > "${cred_dir}/anthropic_key/default/key"
+                chmod 600 "${cred_dir}/anthropic_key/default/key"
                 echo "✅ Anthropic API key configured"
               else
                 echo "ℹ️  ANTHROPIC_API_KEY not provided, skipping (optional for headless deployments)"
               fi
             fi
             
-            # Set proper permissions on all credential files
-            chmod 600 "${cred_dir}"/*.json
+            # Set proper permissions on credential directories
+            chmod 700 "${cred_dir}"/*/default
+            chmod 700 "${cred_dir}"/*
             chmod 700 "${cred_dir}"
           }
           
@@ -303,14 +322,30 @@ jobs:
             echo "Directory exists: YES"
             ls -la ~/.action-llama/credentials/
             
-            echo "=== File permissions and content validation ==="
-            for file in ~/.action-llama/credentials/*.json; do
-              if [ -f "$file" ]; then
-                echo "--- $(basename "$file") ---"
-                echo "Permissions: $(ls -l "$file")"
-                echo "Size: $(stat -c%s "$file") bytes"
-                echo "Keys: $(jq -r 'keys | join(", ")' "$file" 2>/dev/null || echo "Invalid JSON")"
-                echo "Valid JSON: $(jq . "$file" >/dev/null 2>&1 && echo "YES" || echo "NO")"
+            echo "=== Hierarchical credential structure validation ==="
+            for cred_type in github_token git_ssh anthropic_key; do
+              if [ -d ~/.action-llama/credentials/$cred_type ]; then
+                echo "--- $cred_type ---"
+                echo "Type directory exists: YES"
+                ls -la ~/.action-llama/credentials/$cred_type/
+                
+                if [ -d ~/.action-llama/credentials/$cred_type/default ]; then
+                  echo "Default instance exists: YES"
+                  echo "Files in default instance:"
+                  ls -la ~/.action-llama/credentials/$cred_type/default/
+                  
+                  echo "File contents (first 50 chars):"
+                  for file in ~/.action-llama/credentials/$cred_type/default/*; do
+                    if [ -f "$file" ]; then
+                      echo "  $(basename "$file"): $(head -c 50 "$file" | tr '\n' ' ')..."
+                    fi
+                  done
+                else
+                  echo "Default instance exists: NO"
+                fi
+              else
+                echo "--- $cred_type ---"
+                echo "Type directory exists: NO"
               fi
             done
           else
@@ -328,7 +363,7 @@ jobs:
           for path in "/tmp/.action-llama/credentials" "/home/runner/.action-llama/credentials" "$PWD/.action-llama/credentials"; do
             echo "Checking path: $path"
             if [ -d "$path" ]; then
-              echo "  Exists: YES, files: $(ls -1 "$path" 2>/dev/null | wc -l)"
+              echo "  Exists: YES, credential types: $(ls -1 "$path" 2>/dev/null | wc -l)"
             else
               echo "  Exists: NO"
             fi
@@ -455,7 +490,16 @@ jobs:
             echo "Credential directories checked:"
             for path in ~/.action-llama/credentials /tmp/.action-llama/credentials "$(pwd)/.action-llama/credentials"; do
               if [ -d "$path" ]; then
-                echo "  $path: $(ls -1 "$path" | wc -l) files"
+                cred_types=$(ls -1 "$path" 2>/dev/null | wc -l)
+                echo "  $path: $cred_types credential types"
+                for cred_type in github_token git_ssh anthropic_key; do
+                  if [ -d "$path/$cred_type/default" ]; then
+                    field_count=$(ls -1 "$path/$cred_type/default" 2>/dev/null | wc -l)
+                    echo "    - $cred_type: $field_count fields"
+                  else
+                    echo "    - $cred_type: missing"
+                  fi
+                done
               else
                 echo "  $path: not found"
               fi
