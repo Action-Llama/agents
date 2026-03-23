@@ -257,12 +257,14 @@ jobs:
             create_credential_field "git_ssh" "default" "name" "${GIT_NAME:-Action Llama Deploy}"
           fi
           
-          # Configure Anthropic API key (only if provided)
+          # Configure Anthropic API key (always create, use placeholder if not provided)
           if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             create_credential_field "anthropic_key" "default" "key" "${{ secrets.ANTHROPIC_API_KEY }}"
             echo "✅ Anthropic API key configured"
           else
-            echo "ℹ️  ANTHROPIC_API_KEY not provided, skipping (optional for headless deployments)"
+            echo "ℹ️  ANTHROPIC_API_KEY not provided, creating placeholder for headless mode"
+            create_credential_field "anthropic_key" "default" "key" "headless-placeholder-key"
+            echo "✅ Anthropic API key placeholder configured for headless mode"
           fi
           
           # Verify credential structure
