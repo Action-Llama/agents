@@ -10,7 +10,8 @@
     "check-setup": "node scripts/quick-setup.js",
     "status": "node scripts/setup-status.js",
     "pre-commit": "node scripts/pre-commit-check.js",
-    "install-hooks": "node scripts/install-git-hooks.js"
+    "install-hooks": "node scripts/install-git-hooks.js",
+    "resolve-ci-failure": "node scripts/resolve-ci-failure.js"
   },
   "dependencies": {
     "@action-llama/action-llama": "^0.14.1"

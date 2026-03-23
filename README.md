@@ -81,12 +81,13 @@ The deployment workflow runs automatically on pushes to `main`. It:
 ### Troubleshooting Deployment
 
 **"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators should:
-1. **Quick fix**: Run the interactive setup assistant: `GITHUB_TOKEN=your_token npm run setup`
-2. **Manual setup**: Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
-3. **Validation**: Run validation tools after setup:
+1. **Fastest fix**: Run the CI failure resolver: `GITHUB_TOKEN=your_token npm run resolve-ci-failure`
+2. **Interactive setup**: Run the setup assistant: `GITHUB_TOKEN=your_token npm run setup`
+3. **Manual setup**: Follow the [Setup Checklist](./SETUP-CHECKLIST.md) for detailed instructions
+4. **Validation**: Run validation tools after setup:
    - `npm run test-workflow` - Test workflow setup
    - `GITHUB_TOKEN=your_token npm run validate-secrets` - Validate repository secrets
-4. Re-run the deployment after fixing any issues
+5. Re-run the deployment after fixing any issues
 
 **SSH/Deployment failures**: Check that `DEPLOY_SSH_KEY` and `DEPLOY_ENV_TOML` secrets are properly configured using the setup checklist.
 
@@ -113,6 +114,9 @@ npm run setup
 
 # ✅ Validate repository secrets
 npm run validate-secrets
+
+# 🩹 Resolve CI failures (troubleshoot specific failures)
+npm run resolve-ci-failure
 
 # 🛡️  Pre-commit check (prevent CI failures)
 npm run pre-commit
