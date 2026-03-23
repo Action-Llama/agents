@@ -62,8 +62,8 @@ try {
 
 // Test 3: Check environment variable setup
 console.log('\n3️⃣  Checking environment variables...');
-const requiredEnvVars = ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY'];
-const optionalEnvVars = ['GIT_EMAIL', 'GIT_NAME'];
+const requiredEnvVars = ['GITHUB_TOKEN'];
+const optionalEnvVars = ['ANTHROPIC_API_KEY', 'GIT_EMAIL', 'GIT_NAME'];
 
 let missingRequired = [];
 for (const varName of requiredEnvVars) {
@@ -102,13 +102,6 @@ try {
       }, null, 2)
     },
     {
-      name: 'anthropic_key.json', 
-      content: JSON.stringify({
-        type: 'anthropic_key',
-        key: process.env.ANTHROPIC_API_KEY || 'test-key'
-      }, null, 2)
-    },
-    {
       name: 'git_ssh.json',
       content: JSON.stringify({
         type: 'git_ssh',
@@ -118,6 +111,17 @@ try {
       }, null, 2)
     }
   ];
+
+  // Only create anthropic_key.json if ANTHROPIC_API_KEY is provided
+  if (process.env.ANTHROPIC_API_KEY) {
+    credentials.push({
+      name: 'anthropic_key.json', 
+      content: JSON.stringify({
+        type: 'anthropic_key',
+        key: process.env.ANTHROPIC_API_KEY
+      }, null, 2)
+    });
+  }
   
   for (const cred of credentials) {
     const filePath = join(testCredDir, cred.name);

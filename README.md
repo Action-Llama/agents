@@ -25,9 +25,10 @@ The quick setup will guide you through configuring all required secrets for depl
 
 Before the deployment workflow can run successfully, the following repository secrets must be configured in GitHub:
 
-1. **ANTHROPIC_API_KEY** ⚠️ **Required**
+1. **ANTHROPIC_API_KEY** ⚠️ **Required** (optional for headless deployments)
    - Valid Anthropic API key for Claude models
    - Used by agents for AI model access
+   - **Note**: Since this deployment uses `--headless` mode, this key is optional
    - Set at: https://github.com/Action-Llama/agents/settings/secrets/actions
 
 2. **DEPLOY_SSH_KEY** ⚠️ **Required**
@@ -80,7 +81,7 @@ The deployment workflow runs automatically on pushes to `main`. It:
 
 ### Troubleshooting Deployment
 
-**"ANTHROPIC_API_KEY secret not set"**: This means the required repository secret is missing. Repository administrators should:
+**"ANTHROPIC_API_KEY secret not set"**: This key is optional for headless deployments (which is the default), but if you need it for other purposes, repository administrators should:
 1. **Quick fix**: Run the focused fix tool: `GITHUB_TOKEN=your_token npm run fix-anthropic-key`
 2. **General CI issues**: Run the CI failure resolver: `GITHUB_TOKEN=your_token npm run resolve-ci-failure`
 3. **Interactive setup**: Run the setup assistant: `GITHUB_TOKEN=your_token npm run setup`

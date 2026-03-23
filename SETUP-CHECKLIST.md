@@ -25,12 +25,13 @@ The setup assistant will:
 
 ## Required Repository Secrets
 
-The following secrets **must** be configured for the deployment workflow to succeed:
+The following secrets are needed for the deployment workflow. ANTHROPIC_API_KEY is optional for headless deployments (the default mode):
 
-### ✅ ANTHROPIC_API_KEY
+### ✅ ANTHROPIC_API_KEY (Optional for headless deployments)
 
 - **Description**: Valid Anthropic API key for Claude models
 - **Purpose**: Used by agents for AI model access
+- **Note**: Optional when deploying with `--headless` flag (which is the default)
 - **Setup**: 
   1. Obtain an API key from [Anthropic Console](https://console.anthropic.com/)
   2. Go to [Repository Secrets](https://github.com/Action-Llama/agents/settings/secrets/actions)
@@ -130,10 +131,10 @@ git push
 ### Manual Validation
 
 1. Go to [Repository Secrets](https://github.com/Action-Llama/agents/settings/secrets/actions)
-2. Verify all required secrets are listed:
-   - ✅ ANTHROPIC_API_KEY
-   - ✅ DEPLOY_SSH_KEY  
-   - ✅ DEPLOY_ENV_TOML
+2. Verify required secrets are listed:
+   - ✅ DEPLOY_SSH_KEY (required)
+   - ✅ DEPLOY_ENV_TOML (required)
+   - ⚠️ ANTHROPIC_API_KEY (optional for headless deployments)
 3. Check that secret values are not empty
 4. Test by triggering the deployment workflow
 

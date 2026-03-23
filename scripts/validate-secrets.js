@@ -18,11 +18,6 @@ import { exit } from 'process';
 
 const REQUIRED_SECRETS = [
   {
-    name: 'ANTHROPIC_API_KEY',
-    description: 'Valid Anthropic API key for Claude models',
-    required: true
-  },
-  {
     name: 'DEPLOY_SSH_KEY', 
     description: 'SSH private key for deployment access',
     required: true
@@ -31,6 +26,14 @@ const REQUIRED_SECRETS = [
     name: 'DEPLOY_ENV_TOML',
     description: 'Production environment configuration',
     required: true
+  }
+];
+
+const OPTIONAL_SECRETS = [
+  {
+    name: 'ANTHROPIC_API_KEY',
+    description: 'Valid Anthropic API key for Claude models (optional for headless deployments)',
+    required: false
   }
 ];
 
@@ -82,7 +85,7 @@ async function checkSecrets(repo, token) {
 
   console.log(`🔍 Checking repository secrets for ${repo}...\n`);
 
-  let allConfigured = true;
+  let allRequiredConfigured = true;
   
   // Check required secrets
   console.log('📋 Required Secrets:');
@@ -97,7 +100,31 @@ async function checkSecrets(repo, token) {
       } else if (response.status === 404) {
         console.log(`   ❌ ${secret.name} - NOT CONFIGURED`);
         console.log(`      ${secret.description}`);
-        allConfigured = false;
+        allRequiredConfigured = false;
+      } else {
+        console.log(`   ⚠️  ${secret.name} - could not verify (status: ${response.status})`);
+        if (response.status === 403) {
+          console.log(`      Your GitHub token may not have the required permissions.`);
+        }
+      }
+    } catch (error) {
+      console.log(`   ⚠️  ${secret.name} - error checking: ${error.message}`);
+    }
+  }
+
+  // Check optional secrets
+  console.log('\n📋 Optional Secrets:');
+  for (const secret of OPTIONAL_SECRETS) {
+    try {
+      const response = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/${secret.name}`, {
+        headers
+      });
+      
+      if (response.status === 200) {
+        console.log(`   ✅ ${secret.name} - configured`);
+      } else if (response.status === 404) {
+        console.log(`   ⚪ ${secret.name} - not configured (optional)`);
+        console.log(`      ${secret.description}`);
       } else {
         console.log(`   ⚠️  ${secret.name} - could not verify (status: ${response.status})`);
         if (response.status === 403) {
@@ -130,7 +157,7 @@ async function checkSecrets(repo, token) {
     }
   }
 
-  return allConfigured;
+  return allRequiredConfigured;
 }
 
 function printSetupInstructions(repo) {
