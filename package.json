@@ -12,7 +12,8 @@
     "pre-commit": "node scripts/pre-commit-check.js",
     "install-hooks": "node scripts/install-git-hooks.js",
     "resolve-ci-failure": "node scripts/resolve-ci-failure.js",
-    "fix-anthropic-key": "node scripts/fix-missing-anthropic-key.js"
+    "fix-anthropic-key": "node scripts/fix-missing-anthropic-key.js",
+    "ci-anthropic-key-fix": "node scripts/ci-anthropic-key-fix.js"
   },
   "dependencies": {
     "@action-llama/action-llama": "^0.14.1"
