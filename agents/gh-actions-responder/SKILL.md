@@ -5,7 +5,6 @@ metadata:
     - github_token
     - git_ssh
   schedule: "0 * * * *"
-  timeout: 1800
   models:
     - opus
   webhooks:

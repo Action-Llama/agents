@@ -5,8 +5,6 @@ metadata:
     - github_token
     - git_ssh
   schedule: "0 * * * *"
-  scale: 2
-  timeout: 1800
   models:
     - sonnet
   webhooks:
