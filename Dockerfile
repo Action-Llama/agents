@@ -15,3 +15,7 @@
 #   ENV MY_VAR=value
 
 FROM al-agent:d4227bec
+
+USER root
+RUN apk add --no-cache github-cli
+USER node

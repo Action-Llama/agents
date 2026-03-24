@@ -1,3 +1,5 @@
+scale = 10
+
 [models.sonnet]
 provider = "anthropic"
 model = "claude-sonnet-4-20250514"
@@ -13,4 +15,3 @@ authType = "api_key"
 [webhooks.github]
 type = "github"
 allowUnsigned = true
-
