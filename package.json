@@ -16,6 +16,6 @@
     "ci-anthropic-key-fix": "node scripts/ci-anthropic-key-fix.js"
   },
   "dependencies": {
-    "@action-llama/action-llama": "^0.17.1"
+    "@action-llama/action-llama": "^0.17.2"
   }
 }
