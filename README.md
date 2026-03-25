@@ -1,6 +1,22 @@
 # Action-Llama Agents
 
+| Agent | Description |
+|-------|-------------|
+| **dev** | Picks up GitHub issues and implements the requested changes |
+| **reviewer** | Automatically reviews and merges pull requests after quality and security checks |
+| **planner** | Triages GitHub issues and creates detailed implementation plans |
+| **gh-actions-responder** | Fixes broken GitHub Actions workflows by diagnosing failures and pushing fixes |
+| **mintlify-fixer** | Fixes failed Mintlify documentation builds by analyzing errors and opening PRs |
+
 This repository contains Action-Llama agents and their deployment configuration.
+
+To install these agents within an Action Llama project, run:
+
+```bash
+npx al add Action-Llama/agents -a dev
+```
+
+Replace `dev` with the agent you wish to install.
 
 ## Quick Setup
 
