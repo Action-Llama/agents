@@ -1,0 +1,9 @@
+models = ["sonnet"]
+credentials = ["github_token", "git_ssh"]
+
+[[webhooks]]
+source = "github"
+events = ["deployment_status"]
+
+[params]
+mintlifyAppName = "mintlify"

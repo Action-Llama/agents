@@ -1,1 +1,1 @@
-../action-llama/packages/action-llama/agent-docs/AGENTS.md
+node_modules/@action-llama/action-llama/agent-docs/AGENTS.md

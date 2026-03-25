@@ -1,16 +1,5 @@
 ---
 description: Fixes failed Mintlify documentation builds by analyzing errors and opening PRs
-metadata:
-   credentials:
-   - github_token
-   - git_ssh
-   models:
-   - sonnet
-   webhooks:
-    - source: github
-      events: [deployment_status]
-   params:
-      mintlifyAppName: mintlify
 ---
 
 # Mintlify Build Fixer

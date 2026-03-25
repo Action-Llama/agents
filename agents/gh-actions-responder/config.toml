@@ -1,0 +1,12 @@
+models = ["opus"]
+credentials = ["github_token", "git_ssh"]
+schedule = "0 * * * *"
+
+[[webhooks]]
+source = "github"
+events = ["workflow_run"]
+actions = ["completed"]
+branches = ["main"]
+
+[params]
+org = "Action-Llama"

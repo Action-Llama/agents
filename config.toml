@@ -2,13 +2,13 @@ scale = 10
 
 [models.sonnet]
 provider = "anthropic"
-model = "claude-sonnet-4-20250514"
+model = "claude-sonnet-4-6"
 thinkingLevel = "medium"
 authType = "api_key"
 
 [models.opus]
 provider = "anthropic"
-model = "claude-opus-4-20250514"
+model = "claude-opus-4-6"
 thinkingLevel = "xhigh"
 authType = "api_key"
 

@@ -1,23 +1,5 @@
 ---
 description: Picks up GitHub issues and implements the requested changes
-metadata:
-  credentials:
-    - github_token
-    - git_ssh
-  schedule: "0 * * * *"
-  models:
-    - sonnet
-  webhooks:
-    - source: github
-      orgs: [Action-Llama]
-      events: [issues]
-      actions: [labeled]
-      labels: [ready-for-dev]
-      author: asselstine
-  params:
-    org: Action-Llama
-    triggerLabel: ready-for-dev
-    author: asselstine
 ---
 
 # Developer Agent
@@ -38,25 +20,19 @@ Use those values for org, triggerLabel, and author.
 
 **Scheduled trigger (and webhook fallback):** Search across all repositories in your organization for work. Run `gh search issues --owner <org> --label <triggerLabel> --author <author> --state open --json number,title,body,labels,repository --limit 10`. If no issues found, stop.
 
-Write shell variables to `/tmp/env.sh` so they persist across all commands:
+Set persistent environment variables so they're available in all subsequent commands:
 
 ```
-cat > /tmp/env.sh << 'ENVEOF'
-export REPO="<repo field from webhook-trigger>"          # e.g. "Action-Llama/some-repo"
-export ISSUE_NUMBER=<number field from webhook-trigger>   # e.g. 42
-ENVEOF
+setenv REPO "<repo field from webhook-trigger>"          # e.g. "Action-Llama/some-repo"
+setenv ISSUE_NUMBER <number field from webhook-trigger>   # e.g. 42
 ```
 
 For scheduled triggers, use the search results instead:
 
 ```
-cat > /tmp/env.sh << 'ENVEOF'
-export REPO="<repository.nameWithOwner from search>"
-export ISSUE_NUMBER=<number from search>
-ENVEOF
+setenv REPO "<repository.nameWithOwner from search>"
+setenv ISSUE_NUMBER <number from search>
 ```
-
-`/tmp/env.sh` is automatically sourced before every command you run, so `$REPO` and `$ISSUE_NUMBER` will be available in all subsequent bash calls.
 
 ## Acquire resource lock
 

@@ -1,0 +1,24 @@
+models = ["opus"]
+credentials = ["github_token", "git_ssh"]
+schedule = "0 * * * *"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["issues"]
+actions = ["labeled"]
+labels = ["plan"]
+author = "asselstine"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["issue_comment"]
+actions = ["created"]
+labels = ["plan"]
+author = "asselstine"
+
+[params]
+org = "Action-Llama"
+triggerLabel = "plan"
+author = "asselstine"

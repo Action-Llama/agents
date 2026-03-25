@@ -1,24 +1,5 @@
 ---
 description: Automatically reviews and merges pull requests after quality and security checks
-metadata:
-   credentials:
-   - github_token
-   - git_ssh
-   schedule: "0 * * * *"
-   models:
-   - sonnet
-   webhooks:
-    - source: github
-      orgs: [Action-Llama]
-      events: [pull_request]
-      actions: [opened, synchronize, ready_for_review]
-    - source: github
-      orgs: [Action-Llama]
-      events: [check_suite]
-      actions: [completed]
-   params:
-      org: Action-Llama
-      author: asselstine
 ---
 
 # Reviewer Agent
@@ -41,9 +22,11 @@ Use those values for org and author.
 
 **Scheduled trigger:** Search across all repositories in your organization for open PRs. Run `gh search prs --owner <org> --state open --limit 10 --json number,title,repository,isDraft`. If no PRs found, and stop.
 
-Set variables for the rest of the workflow:
-- `REPO` = the repository name (e.g., "Action-Llama/some-repo")
-- `PR_NUMBER` = the PR number
+Set persistent environment variables for the rest of the workflow:
+```
+setenv REPO "<the repository name>"        # e.g. "Action-Llama/some-repo"
+setenv PR_NUMBER <the PR number>           # e.g. 42
+```
 
 ## Acquire resource lock
 

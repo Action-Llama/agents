@@ -1,29 +1,5 @@
 ---
 description: Triages GitHub issues and creates detailed implementation plans
-metadata:
-  credentials:
-    - github_token
-    - git_ssh
-  schedule: "0 * * * *"
-  models:
-    - opus
-  webhooks:
-    - source: github
-      orgs: [Action-Llama]
-      events: [issues]
-      actions: [labeled]
-      labels: [plan]
-      author: asselstine
-    - source: github
-      orgs: [Action-Llama]
-      events: [issue_comment]
-      actions: [created]
-      labels: [plan]
-      author: asselstine
-  params:
-    org: Action-Llama
-    triggerLabel: plan
-    author: asselstine
 ---
 
 # Planner Agent
@@ -38,31 +14,29 @@ Use those values for org, triggerLabel, and author.
 
 **You MUST complete ALL steps below.**
 
+## Determine trigger mode
+
+**Manual trigger or agent call:** If there is no `<webhook-trigger>` block and no scheduled trigger, you have been triggered manually or called by another agent. Read the prompt context (including any `<agent-call>` block) for specific directions. Follow those directions directly — skip the issue search, locking, and label management steps below. Use the "Understand the codebase" and "Assess the issue" sections as guidance for your planning approach, but adapt them to whatever task you've been given.
+
 ## Determine repository and issue
 
 **Webhook trigger:** Extract the repository and issue number from the `<webhook-trigger>` block. The trigger contains `repo` (e.g., "owner/repo") and `number` fields. Check that the issue has your `triggerLabel` and was created by your `author`. If not, stop.
 
 **Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh search issues --owner <org> --label <triggerLabel> --state open --author <author> --json number,title,body,labels,repository --limit 10`. If no issues found, stop.
 
-Write shell variables to `/tmp/env.sh` so they persist across all commands.
+Set persistent environment variables so they're available in all subsequent commands.
 
 **Webhook trigger:**
 ```
-cat > /tmp/env.sh << 'ENVEOF'
-export REPO="<repo from webhook-trigger>"    # e.g. "Action-Llama/some-repo"
-export ISSUE_NUMBER=<number from webhook-trigger>  # e.g. 42
-ENVEOF
+setenv REPO "<repo from webhook-trigger>"    # e.g. "Action-Llama/some-repo"
+setenv ISSUE_NUMBER <number from webhook-trigger>  # e.g. 42
 ```
 
 **Scheduled trigger:** Set these from the search results:
 ```
-cat > /tmp/env.sh << 'ENVEOF'
-export REPO="<owner/repo from search result>"
-export ISSUE_NUMBER=<number from search result>
-ENVEOF
+setenv REPO "<owner/repo from search result>"
+setenv ISSUE_NUMBER <number from search result>
 ```
-
-`/tmp/env.sh` is automatically sourced before every command you run, so `$REPO` and `$ISSUE_NUMBER` will be available in all subsequent bash calls.
 
 Verify they are set before proceeding:
 ```

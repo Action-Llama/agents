@@ -1,0 +1,16 @@
+models = ["sonnet"]
+credentials = ["github_token", "git_ssh"]
+schedule = "0 * * * *"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["issues"]
+actions = ["labeled"]
+labels = ["ready-for-dev"]
+author = "asselstine"
+
+[params]
+org = "Action-Llama"
+triggerLabel = "ready-for-dev"
+author = "asselstine"

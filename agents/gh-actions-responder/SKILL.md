@@ -1,19 +1,5 @@
 ---
 description: Fixes broken GitHub Actions workflows by diagnosing failures and pushing fixes
-metadata:
-  credentials:
-    - github_token
-    - git_ssh
-  schedule: "0 * * * *"
-  models:
-    - opus
-  webhooks:
-    - source: github
-      events: [workflow_run]
-      actions: [completed]
-      branches: [main]
-  params:
-    org: Action-Llama
 ---
 
 # GitHub Actions Responder

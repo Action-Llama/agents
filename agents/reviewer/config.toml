@@ -1,0 +1,19 @@
+models = ["sonnet"]
+credentials = ["github_token", "git_ssh"]
+schedule = "0 * * * *"
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["pull_request"]
+actions = ["opened", "synchronize", "ready_for_review"]
+
+[[webhooks]]
+source = "github"
+orgs = ["Action-Llama"]
+events = ["check_suite"]
+actions = ["completed"]
+
+[params]
+org = "Action-Llama"
+author = "asselstine"
