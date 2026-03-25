@@ -428,10 +428,9 @@ jobs:
           
           # Deploy using al push with headless mode
           # The al CLI will read credentials from ~/.action-llama/credentials
-          # --no-creds skips credential validation so missing optional creds don't block the deploy
-          echo "Running: npx al push --env prod --headless --no-creds"
+          echo "Running: npx al push --env prod --headless"
           set -o pipefail
-          if npx al push --env prod --headless --no-creds 2>&1 | tee deploy.log; then
+          if npx al push --env prod --headless 2>&1 | tee deploy.log; then
             echo "✅ Deploy completed successfully"
           else
             EXIT_CODE=$?
