@@ -320,13 +320,23 @@ jobs:
             echo "✅ Anthropic API key placeholder configured for headless mode"
           fi
           
+          # Configure GitHub webhook secret (required by config.toml webhooks.github)
+          if [ -n "${{ secrets.GITHUB_WEBHOOK_SECRET }}" ]; then
+            create_credential_field "github_webhook_secret" "default" "secret" "${{ secrets.GITHUB_WEBHOOK_SECRET }}"
+            echo "✅ GitHub webhook secret configured"
+          else
+            echo "ℹ️  GITHUB_WEBHOOK_SECRET not provided, creating placeholder for deployment"
+            create_credential_field "github_webhook_secret" "default" "secret" "placeholder-webhook-secret"
+            echo "✅ GitHub webhook secret placeholder configured"
+          fi
+          
           # Verify credential structure
           echo "=== Credential structure verification ==="
           if [ -d "$CREDS_DIR" ]; then
             echo "Credential types created:"
             ls -la "$CREDS_DIR"
             
-            for cred_type in github_token git_ssh anthropic_key; do
+            for cred_type in github_token git_ssh anthropic_key github_webhook_secret; do
               if [ -d "$CREDS_DIR/$cred_type" ]; then
                 echo "  $cred_type instances:"
                 ls -la "$CREDS_DIR/$cred_type/"
@@ -440,7 +450,7 @@ jobs:
               echo "✅ Credential directory exists: $CREDS_DIR"
               
               # Show credential types and instances
-              for cred_type in github_token git_ssh anthropic_key; do
+              for cred_type in github_token git_ssh anthropic_key github_webhook_secret; do
                 if [ -d "$CREDS_DIR/$cred_type/default" ]; then
                   field_count=$(ls -1 "$CREDS_DIR/$cred_type/default" 2>/dev/null | wc -l)
                   echo "  ✅ $cred_type: $field_count field(s) configured"
