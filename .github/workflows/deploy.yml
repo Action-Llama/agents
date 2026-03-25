@@ -17,6 +17,9 @@ concurrency:
   group: deploy
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -31,6 +34,52 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Update Action Llama
+        id: update-al
+        run: |
+          # Sleep briefly when triggered by repository_dispatch to allow npm propagation
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "Waiting for npm registry..."
+            sleep 10
+          fi
+
+          CURRENT=$(node -p "require('./package.json').dependencies['@action-llama/action-llama']")
+          CURRENT_VERSION="${CURRENT#^}"
+
+          LATEST_NEXT=$(npm view @action-llama/action-llama@next version 2>/dev/null || echo "")
+          LATEST_STABLE=$(npm view @action-llama/action-llama version)
+
+          if [ -n "$LATEST_NEXT" ] && echo "$CURRENT_VERSION" | grep -q "^0\.1[0-9]"; then
+            TARGET_VERSION="$LATEST_NEXT"
+            TARGET_TAG="next"
+          else
+            TARGET_VERSION="$LATEST_STABLE"
+            TARGET_TAG="latest"
+          fi
+
+          if [ "$CURRENT_VERSION" != "$TARGET_VERSION" ]; then
+            echo "Updating @action-llama/action-llama from $CURRENT_VERSION to $TARGET_VERSION ($TARGET_TAG)"
+            if [ "$TARGET_TAG" = "next" ]; then
+              npm install @action-llama/action-llama@$TARGET_TAG
+            else
+              npm install @action-llama/action-llama@^$TARGET_VERSION
+            fi
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Action Llama is already up to date ($CURRENT_VERSION)"
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated Action Llama
+        if: steps.update-al.outputs.updated == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: update action-llama to v${{ steps.update-al.outputs.version }}"
+          git push origin main
 
       - name: Set up SSH key
         run: |
