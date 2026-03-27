@@ -1,0 +1,6 @@
+models = ["sonnet"]
+credentials = ["github_token", "git_ssh"]
+schedule = "0 * * * *"
+
+[params]
+repo = "Action-Llama/action-llama"
