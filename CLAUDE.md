@@ -1,1 +1,1 @@
-node_modules/@action-llama/action-llama/agent-docs/AGENTS.md
+The full Action llama docs are available at https://docs.actionllama.org/llms.txt
