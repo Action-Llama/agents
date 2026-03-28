@@ -15,6 +15,7 @@
 import { execSync } from 'child_process';
 import { exit } from 'process';
 import readline from 'readline/promises';
+import { getRepoInfo as _getRepoInfo, checkGitHubToken } from './utils.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -62,28 +63,12 @@ const OPTIONAL_VARIABLES = [
 
 function getRepoInfo() {
   try {
-    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
-    const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
-    if (!match) {
-      throw new Error('Could not parse repository from git remote');
-    }
-    return `${match[1]}/${match[2]}`;
+    return _getRepoInfo();
   } catch (error) {
     console.error('❌ Error: Could not determine repository. Run this script from within the repository.');
     console.error(`   Details: ${error.message}`);
     exit(1);
   }
-}
-
-function checkGitHubToken() {
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-  if (!token) {
-    console.error('❌ Error: GitHub token not found.');
-    console.error('   Set GITHUB_TOKEN or GH_TOKEN environment variable with a token that has "repo" scope.');
-    console.error('   Create a token at: https://github.com/settings/tokens/new?scopes=repo');
-    exit(1);
-  }
-  return token;
 }
 
 async function checkSecrets(repo, token) {

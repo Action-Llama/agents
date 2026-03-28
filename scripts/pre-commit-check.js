@@ -15,6 +15,7 @@
 
 import { execSync } from 'child_process';
 import { exit } from 'process';
+import { getRepoInfo as _getRepoInfo } from './utils.js';
 
 const EMOJI = {
   check: '✅',
@@ -26,12 +27,7 @@ const EMOJI = {
 
 function getRepoInfo() {
   try {
-    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
-    const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
-    if (!match) {
-      return null;
-    }
-    return `${match[1]}/${match[2]}`;
+    return _getRepoInfo();
   } catch (error) {
     return null;
   }
