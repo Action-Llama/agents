@@ -14,6 +14,7 @@
 
 import { execSync } from 'child_process';
 import { exit } from 'process';
+import { getRepoInfo as _getRepoInfo, checkGitHubToken as _checkGitHubToken } from './utils.js';
 
 const EMOJI = {
   check: '✅',
@@ -28,12 +29,7 @@ const EMOJI = {
 
 function getRepoInfo() {
   try {
-    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
-    const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
-    if (!match) {
-      throw new Error('Could not parse repository from git remote');
-    }
-    return `${match[1]}/${match[2]}`;
+    return _getRepoInfo();
   } catch (error) {
     console.error(`${EMOJI.cross} Error: Could not determine repository.`);
     console.error(`   Run this script from within the repository.`);
@@ -42,7 +38,7 @@ function getRepoInfo() {
 }
 
 function checkGitHubToken() {
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const token = _checkGitHubToken({ exitOnMissing: false });
   if (!token) {
     console.error(`${EMOJI.cross} GitHub token not found.`);
     console.error('   Set GITHUB_TOKEN environment variable:');
