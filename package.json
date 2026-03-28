@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test tests/**/*.test.js",
     "validate-secrets": "node scripts/validate-secrets.js",
     "test-workflow": "node scripts/test-deploy-workflow.js",
     "setup": "node scripts/setup-assistant.js",
