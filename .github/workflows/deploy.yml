@@ -394,6 +394,25 @@ jobs:
             echo "Deploy will likely fail, but continuing for diagnostic purposes"
           fi
 
+      - name: Set up host-user runtime prerequisites
+        run: |
+          # The al push command runs a doctor check that validates host-user runtime
+          # requirements locally. Agents with runtime.type = "host-user" need a
+          # system user (default: al-agent) and sudoers configuration to exist.
+          # On the GitHub Actions runner this is only needed to pass validation -
+          # the actual user/sudoers setup on the deploy target is managed separately.
+          RUNNER_USER=$(whoami)
+          AGENT_USER="al-agent"
+
+          echo "Creating system user '$AGENT_USER' for host-user runtime validation..."
+          sudo useradd -r -m -s /usr/sbin/nologin "$AGENT_USER"
+
+          echo "Configuring sudoers for $RUNNER_USER -> $AGENT_USER..."
+          echo "$RUNNER_USER ALL=($AGENT_USER) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/al-$AGENT_USER"
+          sudo chmod 0440 "/etc/sudoers.d/al-$AGENT_USER"
+
+          echo "✅ host-user runtime prerequisites configured"
+
       - name: Deploy
         env:
           # Ensure proper Git SSH setup for deployment
