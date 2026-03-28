@@ -15,8 +15,9 @@
 
 import { execSync } from 'child_process';
 import { exit } from 'process';
+import { fileURLToPath } from 'url';
 
-const EMOJI = {
+export const EMOJI = {
   check: '✅',
   cross: '❌',
   warning: '⚠️',
@@ -46,7 +47,7 @@ function checkBranch() {
   }
 }
 
-async function quickSecretCheck(repo, token) {
+async function quickSecretCheck(repo, token, fetchFn, timeoutMs) {
   if (!repo || !token) {
     return null;
   }
@@ -57,69 +58,94 @@ async function quickSecretCheck(repo, token) {
   };
 
   try {
-    const response = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/ANTHROPIC_API_KEY`, { 
-      headers,
-      signal: AbortSignal.timeout(3000) // 3 second timeout
-    });
+    const response = await fetchFn(
+      `https://api.github.com/repos/${repo}/actions/secrets/ANTHROPIC_API_KEY`,
+      { 
+        headers,
+        signal: AbortSignal.timeout(timeoutMs)
+      }
+    );
     return response.status === 200;
   } catch (error) {
     return null; // Network error or timeout
   }
 }
 
-async function main() {
-  const repo = getRepoInfo();
-  const branch = checkBranch();
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+/**
+ * Main pre-commit check logic.
+ *
+ * @param {object} [deps] - Injectable dependencies for testing
+ * @param {() => string|null} [deps.getBranch] - Returns current git branch
+ * @param {() => string|null} [deps.getRepo] - Returns "owner/repo" string
+ * @param {Function} [deps.fetchFn] - fetch-compatible function for API calls
+ * @param {object} [deps.env] - Environment variables (defaults to process.env)
+ * @param {number} [deps.timeoutMs] - Timeout for API calls in milliseconds
+ * @param {Function} [deps.log] - Logging function (defaults to console.log)
+ */
+export async function main({
+  getBranch = checkBranch,
+  getRepo = getRepoInfo,
+  fetchFn = fetch,
+  env = process.env,
+  timeoutMs = 3000,
+  log = console.log,
+} = {}) {
+  const repo = getRepo();
+  const branch = getBranch();
+  const token = env.GITHUB_TOKEN || env.GH_TOKEN;
 
-  console.log(`${EMOJI.gear} Pre-commit Setup Check`);
-  console.log('');
+  log(`${EMOJI.gear} Pre-commit Setup Check`);
+  log('');
 
   // Quick branch check
   if (branch === 'main') {
-    console.log(`${EMOJI.warning} You're committing to the main branch.`);
-    console.log(`${EMOJI.info} This will trigger the deployment workflow.`);
-    console.log('');
+    log(`${EMOJI.warning} You're committing to the main branch.`);
+    log(`${EMOJI.info} This will trigger the deployment workflow.`);
+    log('');
 
     // Only do detailed checking for main branch commits
     if (repo && token) {
-      console.log(`${EMOJI.gear} Checking deployment readiness...`);
+      log(`${EMOJI.gear} Checking deployment readiness...`);
       
-      const hasAnthropicKey = await quickSecretCheck(repo, token);
+      const hasAnthropicKey = await quickSecretCheck(repo, token, fetchFn, timeoutMs);
       
       if (hasAnthropicKey === false) {
-        console.log(`${EMOJI.cross} WARNING: ANTHROPIC_API_KEY is not configured.`);
-        console.log(`${EMOJI.warning} Deployment will fail until this secret is added.`);
-        console.log('');
-        console.log(`${EMOJI.gear} To fix this before committing:`);
-        console.log('   npm run quick-setup');
-        console.log('');
-        console.log(`${EMOJI.info} Or commit with "dry-run" in message to test workflow:`);
-        console.log('   git commit -m "test: dry-run workflow validation"');
-        console.log('');
+        log(`${EMOJI.cross} WARNING: ANTHROPIC_API_KEY is not configured.`);
+        log(`${EMOJI.warning} Deployment will fail until this secret is added.`);
+        log('');
+        log(`${EMOJI.gear} To fix this before committing:`);
+        log('   npm run quick-setup');
+        log('');
+        log(`${EMOJI.info} Or commit with "dry-run" in message to test workflow:`);
+        log('   git commit -m "test: dry-run workflow validation"');
+        log('');
         
         // Don't fail pre-commit, but warn user
-        console.log(`${EMOJI.warning} Proceeding with commit (deployment will need setup)`);
+        log(`${EMOJI.warning} Proceeding with commit (deployment will need setup)`);
       } else if (hasAnthropicKey === true) {
-        console.log(`${EMOJI.check} Essential secrets appear to be configured.`);
+        log(`${EMOJI.check} Essential secrets appear to be configured.`);
       } else {
-        console.log(`${EMOJI.info} Could not verify secrets (network/permissions).`);
-        console.log(`${EMOJI.info} Run 'npm run quick-setup' to verify setup.`);
+        log(`${EMOJI.info} Could not verify secrets (network/permissions).`);
+        log(`${EMOJI.info} Run 'npm run quick-setup' to verify setup.`);
       }
     } else {
-      console.log(`${EMOJI.info} To verify deployment readiness:`);
-      console.log('   GITHUB_TOKEN=your_token npm run quick-setup');
+      log(`${EMOJI.info} To verify deployment readiness:`);
+      log('   GITHUB_TOKEN=your_token npm run quick-setup');
     }
   } else {
-    console.log(`${EMOJI.check} Feature branch commit - deployment won't trigger.`);
+    log(`${EMOJI.check} Feature branch commit - deployment won't trigger.`);
   }
 
-  console.log('');
-  console.log(`${EMOJI.check} Pre-commit check completed.`);
+  log('');
+  log(`${EMOJI.check} Pre-commit check completed.`);
 }
 
-main().catch(error => {
-  console.error(`${EMOJI.cross} Pre-commit check failed:`, error.message);
-  // Don't fail the commit for check errors
-  exit(0);
-});
+// Only run when invoked directly (not when imported as a module)
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch(error => {
+    console.error(`${EMOJI.cross} Pre-commit check failed:`, error.message);
+    // Don't fail the commit for check errors
+    exit(0);
+  });
+}
