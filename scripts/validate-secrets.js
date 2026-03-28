@@ -16,7 +16,7 @@
 import { execSync } from 'child_process';
 import { exit } from 'process';
 
-const REQUIRED_SECRETS = [
+export const REQUIRED_SECRETS = [
   {
     name: 'DEPLOY_SSH_KEY', 
     description: 'SSH private key for deployment access',
@@ -29,7 +29,7 @@ const REQUIRED_SECRETS = [
   }
 ];
 
-const OPTIONAL_SECRETS = [
+export const OPTIONAL_SECRETS = [
   {
     name: 'ANTHROPIC_API_KEY',
     description: 'Valid Anthropic API key for Claude models (optional for headless deployments)',
@@ -37,7 +37,7 @@ const OPTIONAL_SECRETS = [
   }
 ];
 
-const OPTIONAL_VARIABLES = [
+export const OPTIONAL_VARIABLES = [
   {
     name: 'GIT_EMAIL',
     description: 'Email for Git commits (defaults to deploy@action-llama.com)',
@@ -76,7 +76,7 @@ function checkGitHubToken() {
   return token;
 }
 
-async function checkSecrets(repo, token) {
+export async function checkSecrets(repo, token, { fetchFn = fetch } = {}) {
   const headers = {
     'Authorization': `token ${token}`,
     'Accept': 'application/vnd.github.v3+json',
@@ -91,7 +91,7 @@ async function checkSecrets(repo, token) {
   console.log('📋 Required Secrets:');
   for (const secret of REQUIRED_SECRETS) {
     try {
-      const response = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/${secret.name}`, {
+      const response = await fetchFn(`https://api.github.com/repos/${repo}/actions/secrets/${secret.name}`, {
         headers
       });
       
@@ -116,7 +116,7 @@ async function checkSecrets(repo, token) {
   console.log('\n📋 Optional Secrets:');
   for (const secret of OPTIONAL_SECRETS) {
     try {
-      const response = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/${secret.name}`, {
+      const response = await fetchFn(`https://api.github.com/repos/${repo}/actions/secrets/${secret.name}`, {
         headers
       });
       
@@ -140,7 +140,7 @@ async function checkSecrets(repo, token) {
   console.log('\n🔧 Optional Repository Variables:');
   for (const variable of OPTIONAL_VARIABLES) {
     try {
-      const response = await fetch(`https://api.github.com/repos/${repo}/actions/variables/${variable.name}`, {
+      const response = await fetchFn(`https://api.github.com/repos/${repo}/actions/variables/${variable.name}`, {
         headers
       });
       
@@ -160,7 +160,7 @@ async function checkSecrets(repo, token) {
   return allRequiredConfigured;
 }
 
-function printSetupInstructions(repo) {
+export function printSetupInstructions(repo) {
   console.log('\n🔧 SETUP INSTRUCTIONS:');
   console.log('\nTo configure missing secrets:');
   console.log(`   1. Go to: https://github.com/${repo}/settings/secrets/actions`);

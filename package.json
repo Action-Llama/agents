@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "vitest run",
     "validate-secrets": "node scripts/validate-secrets.js",
     "test-workflow": "node scripts/test-deploy-workflow.js",
     "setup": "node scripts/setup-assistant.js",
@@ -17,5 +18,8 @@
   },
   "dependencies": {
     "@action-llama/action-llama": "^0.18.7"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2"
   }
 }
