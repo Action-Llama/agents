@@ -17,6 +17,7 @@
 
 import { execSync } from 'child_process';
 import { exit } from 'process';
+import { fileURLToPath } from 'url';
 
 const EMOJI = {
   check: '✅',
@@ -32,19 +33,19 @@ const EMOJI = {
 };
 
 const CI_FAILURE_PATTERNS = {
-  MISSING_ANTHROPIC_KEY: {
-    pattern: /ANTHROPIC_API_KEY.*not set|not configured/i,
-    title: 'Missing ANTHROPIC_API_KEY Secret',
-    description: 'The deployment workflow requires an Anthropic API key to access Claude AI models.',
-    solution: 'ANTHROPIC_API_KEY',
-    priority: 'CRITICAL'
-  },
   ONLY_ANTHROPIC_KEY_MISSING: {
     pattern: /ANTHROPIC_API_KEY.*not set.*DEPLOY_SSH_KEY.*is set.*DEPLOY_ENV_TOML.*is set/i,
     title: 'Only ANTHROPIC_API_KEY Missing (Quick Fix Available)',
     description: 'Most configuration is complete - only the ANTHROPIC_API_KEY needs to be added.',
     solution: 'ANTHROPIC_API_KEY_ONLY',
     priority: 'HIGH'
+  },
+  MISSING_ANTHROPIC_KEY: {
+    pattern: /ANTHROPIC_API_KEY.*not set|not configured/i,
+    title: 'Missing ANTHROPIC_API_KEY Secret',
+    description: 'The deployment workflow requires an Anthropic API key to access Claude AI models.',
+    solution: 'ANTHROPIC_API_KEY',
+    priority: 'CRITICAL'
   },
   MISSING_DEPLOY_SSH: {
     pattern: /DEPLOY_SSH_KEY.*not set|SSH.*authentication.*failed/i,
@@ -415,7 +416,21 @@ async function main() {
   console.log(`${EMOJI.check} Need more help? Run: npm run setup`);
 }
 
-main().catch(error => {
-  console.error(`${EMOJI.cross} CI resolution failed:`, error.message);
-  exit(1);
-});
+export function matchFailurePattern(logText) {
+  for (const [key, pattern] of Object.entries(CI_FAILURE_PATTERNS)) {
+    if (pattern.pattern.test(logText)) {
+      return pattern;
+    }
+  }
+  return null;
+}
+
+export { CI_FAILURE_PATTERNS, SECRET_SOLUTIONS, printSolution, validateSecretExists, validateAllSecrets };
+
+// Only run main() when executed directly (not imported as a module)
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch(error => {
+    console.error(`${EMOJI.cross} CI resolution failed:`, error.message);
+    exit(1);
+  });
+}
