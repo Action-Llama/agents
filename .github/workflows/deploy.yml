@@ -84,7 +84,7 @@ jobs:
       - name: Set up SSH key
         run: |
           if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-            echo "🧪 DRY RUN: Skipping SSH key setup (secret not configured)"
+            echo "DRY RUN: Skipping SSH key setup (secret not configured)"
             mkdir -p ~/.ssh
             echo "# Dry run - SSH key would be configured here" > ~/.ssh/deploy_key
             chmod 600 ~/.ssh/deploy_key
@@ -97,312 +97,51 @@ jobs:
       - name: Set up environment config
         run: |
           if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_ENV_TOML }}" ]; then
-            echo "🧪 DRY RUN: Skipping environment config setup (secret not configured)"
+            echo "DRY RUN: Skipping environment config setup (secret not configured)"
             mkdir -p ~/.action-llama/environments
             echo "# Dry run - environment config would be configured here" > ~/.action-llama/environments/prod.toml
-            # Also create env.toml for backward compatibility
             echo "# Dry run - environment config would be configured here" > env.toml
           else
             mkdir -p ~/.action-llama/environments
             echo '${{ secrets.DEPLOY_ENV_TOML }}' > ~/.action-llama/environments/prod.toml
-            # Also create env.toml in the current directory for the deployment
             echo '${{ secrets.DEPLOY_ENV_TOML }}' > env.toml
           fi
 
       - name: Validate required secrets
         run: |
-          echo "=== Validating required secrets ==="
-          echo "ℹ️  Repository setup validation for Action-Llama deployment"
-          echo ""
-          
-          MISSING_SECRETS=""
-          SETUP_SCORE=0
-          TOTAL_SECRETS=3
-          OPTIONAL_SECRETS=0
-          
-          # Check if ANTHROPIC_API_KEY is set (optional for headless deployments)
-          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-            echo "⚠️  INFO: ANTHROPIC_API_KEY repository secret is not set (optional for headless deployments)"
-          else
-            echo "✅ ANTHROPIC_API_KEY secret is set"
-            OPTIONAL_SECRETS=$((OPTIONAL_SECRETS + 1))
-          fi
-          
-          # Check if DEPLOY_SSH_KEY is set  
+          MISSING=""
+
           if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-            echo "❌ ERROR: DEPLOY_SSH_KEY repository secret is not set or is empty"
-            MISSING_SECRETS="$MISSING_SECRETS DEPLOY_SSH_KEY"
+            echo "ERROR: DEPLOY_SSH_KEY is not set"
+            MISSING="$MISSING DEPLOY_SSH_KEY"
           else
-            echo "✅ DEPLOY_SSH_KEY secret is set"
-            SETUP_SCORE=$((SETUP_SCORE + 1))
+            echo "DEPLOY_SSH_KEY is set"
           fi
-          
-          # Check if DEPLOY_ENV_TOML is set
+
           if [ -z "${{ secrets.DEPLOY_ENV_TOML }}" ]; then
-            echo "❌ ERROR: DEPLOY_ENV_TOML repository secret is not set or is empty"
-            MISSING_SECRETS="$MISSING_SECRETS DEPLOY_ENV_TOML"
+            echo "ERROR: DEPLOY_ENV_TOML is not set"
+            MISSING="$MISSING DEPLOY_ENV_TOML"
           else
-            echo "✅ DEPLOY_ENV_TOML secret is set"
-            SETUP_SCORE=$((SETUP_SCORE + 1))
+            echo "DEPLOY_ENV_TOML is set"
           fi
-          
-          # Check if GITHUB_TOKEN is available
-          if [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
-            echo "❌ ERROR: GITHUB_TOKEN is not available"
-            MISSING_SECRETS="$MISSING_SECRETS GITHUB_TOKEN"
-          else
-            echo "✅ GITHUB_TOKEN is available"
-            SETUP_SCORE=$((SETUP_SCORE + 1))
-          fi
-          
-          echo ""
-          echo "📊 SETUP STATUS: ${SETUP_SCORE}/${TOTAL_SECRETS} required secrets configured, ${OPTIONAL_SECRETS}/1 optional secrets configured"
-          
-          # If any secrets are missing, provide enhanced guidance
-          if [ -n "$MISSING_SECRETS" ]; then
-            echo ""
-            
-            # Special case: Only ANTHROPIC_API_KEY is missing
-            if [ "$MISSING_SECRETS" = " ANTHROPIC_API_KEY" ] && [ "$SETUP_SCORE" = "3" ]; then
-              echo "🎯 QUICK FIX AVAILABLE: Only ANTHROPIC_API_KEY is missing!"
-              echo "   This is a 2-3 minute fix. Run: npm run ci-anthropic-key-fix"
-              echo ""
-              echo "🔧 OR MANUAL STEPS:"
-              echo "   1. Get API key: https://console.anthropic.com/account/keys"
-              echo "   2. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
-              echo "   3. Add secret: ANTHROPIC_API_KEY = [your key]"
-              echo "   4. Re-run this workflow"
-              echo ""
-              echo "✨ Everything else is configured - just add the API key!"
-              echo ""
-            else
-              echo "🔧 CONFIGURATION REQUIRED:"
-              echo "The following repository secrets need to be configured for deployment to succeed:"
-            fi
-            echo ""
-            
-            for secret in $MISSING_SECRETS; do
-              echo "🔑 $secret:"
-              case $secret in
-                "ANTHROPIC_API_KEY")
-                  echo "   Purpose: API access for Claude AI models (optional for headless deployments)"
-                  echo "   Get key: https://console.anthropic.com/account/keys"
-                  echo "   Format: Starts with 'sk-ant-'"
-                  echo "   Note: This deployment uses --headless mode, so this key is optional"
-                  ;;
-                "DEPLOY_SSH_KEY")
-                  echo "   Purpose: SSH access for deployment to production"
-                  echo "   Generate: ssh-keygen -t rsa -b 4096 -C 'deploy@action-llama.com'"
-                  echo "   Docs: https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
-                  ;;
-                "DEPLOY_ENV_TOML")
-                  echo "   Purpose: Production environment configuration"
-                  echo "   Format: TOML configuration file content"
-                  ;;
-                "GITHUB_TOKEN")
-                  echo "   Purpose: GitHub API access (usually automatic)"
-                  echo "   Note: This should be provided automatically by GitHub Actions"
-                  ;;
-              esac
-              echo ""
-            done
-            
-            echo "🚀 FASTEST SETUP (recommended):"
-            echo "   1. Clone repository locally"
-            echo "   2. Set GitHub token: export GITHUB_TOKEN=your_token_here"
-            echo "   3. If only ANTHROPIC_API_KEY missing: npm install && npm run ci-anthropic-key-fix"
-            echo "   4. OR for general CI issues: npm install && npm run resolve-ci-failure"
-            echo "   5. OR for full setup: npm run quick-setup"
-            echo "   6. Follow the guided instructions"
-            echo "   7. Re-run this workflow"
-            echo ""
-            echo "📋 MANUAL SETUP:"
-            echo "   1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
-            echo "   2. Click 'New repository secret'"
-            echo "   3. Add each missing secret listed above"
-            echo "   4. Verify setup: npm run status"
-            echo "   5. Re-run this workflow"
-            echo ""
-            echo "🔍 VALIDATION TOOLS (run locally):"
-            echo "   npm run ci-anthropic-key-fix # Fast fix for missing ANTHROPIC_API_KEY only"
-            echo "   npm run resolve-ci-failure   # Resolve specific CI failures"
-            echo "   npm run quick-setup          # Fast setup assistant"
-            echo "   npm run status               # Complete setup dashboard"
-            echo "   npm run test-workflow        # Test workflow components"
-            echo "   npm run setup                # Interactive setup guide"
-            echo ""
-            echo "💡 TEST WITHOUT FULL SETUP:"
-            echo "   Use dry-run mode to validate workflow structure:"
-            echo "   • Include 'dry-run' in commit message, OR"
-            echo "   • Manually trigger workflow and check 'Run in dry-run mode'"
-            echo "   This tests the workflow logic without requiring all secrets."
-            echo ""
-            echo "📚 DOCUMENTATION:"
-            echo "   • README.md - Complete setup guide"
-            echo "   • SETUP-CHECKLIST.md - Step-by-step checklist"
-            echo ""
-            echo "⚠️  REPOSITORY ADMIN REQUIRED:"
-            echo "   Adding repository secrets requires repository admin permissions."
-            echo "   If you don't have admin access, ask a repository administrator"
-            echo "   to run the setup process or add the missing secrets."
-            
-            # Enable dry-run mode if requested
+
+          if [ -n "$MISSING" ]; then
             if [[ "${{ github.event.head_commit.message }}" =~ dry-run ]] || [[ "${{ inputs.dry_run }}" == "true" ]]; then
-              echo ""
-              echo "🧪 DRY RUN MODE ENABLED"
-              echo "   Continuing workflow validation without actual deployment"
-              echo "   This tests workflow structure and processes"
+              echo "DRY RUN MODE: continuing without required secrets"
               echo "DRY_RUN=true" >> $GITHUB_ENV
             else
-              echo ""
-              echo "❌ DEPLOYMENT BLOCKED: Missing required secrets"
-              echo "   Complete setup using the instructions above, then re-run this workflow."
+              echo "DEPLOYMENT BLOCKED: Missing required secrets:$MISSING"
+              echo "Add them at: https://github.com/${{ github.repository }}/settings/secrets/actions"
               exit 1
             fi
-          else
-            echo ""
-            echo "✅ All required secrets are configured and ready for deployment!"
-            echo "🚀 Proceeding with deployment workflow..."
-          fi
-
-      - name: Configure credentials for action-llama
-        run: |
-          # Create the credential directory that al CLI expects
-          # The al CLI v0.14.1+ only looks at ~/.action-llama/credentials and does not respect
-          # the ACTION_LLAMA_CREDS_DIR environment variable
-          CREDS_DIR="$HOME/.action-llama/credentials"
-          mkdir -p "$CREDS_DIR"
-          chmod 700 "$CREDS_DIR"
-          
-          echo "Creating credentials in: $CREDS_DIR"
-          
-          # Function to create a credential field file
-          create_credential_field() {
-            local type="$1"
-            local instance="$2" 
-            local field="$3"
-            local value="$4"
-            
-            local field_dir="$CREDS_DIR/$type/$instance"
-            mkdir -p "$field_dir"
-            chmod 700 "$field_dir"
-            
-            echo -n "$value" > "$field_dir/$field"
-            chmod 600 "$field_dir/$field"
-            echo "  Created $type/$instance/$field"
-          }
-          
-          # Configure GitHub token credential
-          create_credential_field "github_token" "default" "token" "${{ secrets.GITHUB_TOKEN }}"
-          
-          # Configure SSH/Git credentials
-          GIT_EMAIL="${{ vars.GIT_EMAIL }}"
-          GIT_NAME="${{ vars.GIT_NAME }}"
-          
-          if [ "$DRY_RUN" = "true" ] && [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-            echo "🧪 DRY RUN: Creating placeholder SSH credentials"
-            create_credential_field "git_ssh" "default" "privateKey" "dry-run-placeholder"
-            create_credential_field "git_ssh" "default" "email" "${GIT_EMAIL:-deploy@action-llama.com}"
-            create_credential_field "git_ssh" "default" "name" "${GIT_NAME:-Action Llama Deploy}"
-          else
-            create_credential_field "git_ssh" "default" "privateKey" "${{ secrets.DEPLOY_SSH_KEY }}"
-            create_credential_field "git_ssh" "default" "email" "${GIT_EMAIL:-deploy@action-llama.com}"
-            create_credential_field "git_ssh" "default" "name" "${GIT_NAME:-Action Llama Deploy}"
-          fi
-          
-          # Configure Anthropic API key (always create, use placeholder if not provided)
-          if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-            create_credential_field "anthropic_key" "default" "key" "${{ secrets.ANTHROPIC_API_KEY }}"
-            echo "✅ Anthropic API key configured"
-          else
-            echo "ℹ️  ANTHROPIC_API_KEY not provided, creating placeholder for headless mode"
-            create_credential_field "anthropic_key" "default" "key" "headless-placeholder-key"
-            echo "✅ Anthropic API key placeholder configured for headless mode"
-          fi
-          
-          # Configure GitHub webhook secret (required by config.toml webhooks.github)
-          if [ -n "${{ secrets.GITHUB_WEBHOOK_SECRET }}" ]; then
-            create_credential_field "github_webhook_secret" "default" "secret" "${{ secrets.GITHUB_WEBHOOK_SECRET }}"
-            echo "✅ GitHub webhook secret configured"
-          else
-            echo "ℹ️  GITHUB_WEBHOOK_SECRET not provided, creating placeholder for deployment"
-            create_credential_field "github_webhook_secret" "default" "secret" "placeholder-webhook-secret"
-            echo "✅ GitHub webhook secret placeholder configured"
-          fi
-          
-          # Verify credential structure
-          echo "=== Credential structure verification ==="
-          if [ -d "$CREDS_DIR" ]; then
-            echo "Credential types created:"
-            ls -la "$CREDS_DIR"
-            
-            for cred_type in github_token git_ssh anthropic_key github_webhook_secret; do
-              if [ -d "$CREDS_DIR/$cred_type" ]; then
-                echo "  $cred_type instances:"
-                ls -la "$CREDS_DIR/$cred_type/"
-                
-                if [ -d "$CREDS_DIR/$cred_type/default" ]; then
-                  echo "    default instance fields:"
-                  ls -la "$CREDS_DIR/$cred_type/default/"
-                fi
-              fi
-            done
-          fi
-
-      - name: Debug credentials and environment
-        run: |
-          echo "=== Environment info ==="
-          echo "HOME: $HOME"
-          echo "PWD: $PWD"
-          echo "USER: $(whoami)"
-          echo "al CLI version: $(npx al --version)"
-          
-          echo "=== Credential directory verification ==="
-          CREDS_DIR="$HOME/.action-llama/credentials"
-          echo "Credential directory: $CREDS_DIR"
-          
-          if [ -d "$CREDS_DIR" ]; then
-            echo "✅ Credential directory exists"
-            
-            echo "=== Testing al CLI credential detection ==="
-            if npx al creds ls; then
-              echo "✅ al CLI successfully detected credentials"
-            else
-              echo "❌ al CLI failed to detect credentials (exit code: $?)"
-              
-              echo "=== Debugging credential structure ==="
-              echo "Directory structure:"
-              find "$CREDS_DIR" -type f -exec ls -la {} \; 2>/dev/null || echo "No credential files found"
-              
-              echo "=== Checking file permissions ==="
-              find "$CREDS_DIR" -type d -exec echo "DIR: {} - $(stat -c '%a %U:%G' {})" \; 2>/dev/null || echo "Could not check directory permissions"
-              find "$CREDS_DIR" -type f -exec echo "FILE: {} - $(stat -c '%a %U:%G' {})" \; 2>/dev/null || echo "Could not check file permissions"
-            fi
-          else
-            echo "❌ Credential directory does not exist: $CREDS_DIR"
-          fi
-
-      - name: Validate credentials before deploy
-        run: |
-          echo "=== Final credential validation ==="
-          
-          if npx al creds ls; then
-            echo "✅ Credential validation successful - al CLI can read credentials"
-          else
-            echo "❌ Credential validation failed - al CLI cannot read credentials"
-            echo "This indicates a problem with the credential file structure or permissions"
-            echo "Deploy will likely fail, but continuing for diagnostic purposes"
           fi
 
       - name: Set up host-user runtime prerequisites
         run: |
-          # The al push command runs a doctor check that validates host-user runtime
-          # requirements locally. Agents with runtime.type = "host-user" need a
-          # system user (default: al-agent) and sudoers configuration to exist.
-          # On the GitHub Actions runner this is only needed to pass validation -
-          # the actual user/sudoers setup on the deploy target is managed separately.
-          RUNNER_USER=$(whoami)
+          # al push validates host-user runtime requirements locally.
+          # Create the system user on the CI runner to pass validation.
           AGENT_USER="al-agent"
+          RUNNER_USER=$(whoami)
 
           echo "Creating system user '$AGENT_USER' for host-user runtime validation..."
           sudo useradd -r -m -s /usr/sbin/nologin "$AGENT_USER"
@@ -411,83 +150,29 @@ jobs:
           echo "$RUNNER_USER ALL=($AGENT_USER) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/al-$AGENT_USER"
           sudo chmod 0440 "/etc/sudoers.d/al-$AGENT_USER"
 
-          echo "✅ host-user runtime prerequisites configured"
-
       - name: Deploy
         env:
-          # Ensure proper Git SSH setup for deployment
           GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key"
         run: |
-          # Check if we're in dry-run mode
           if [ "$DRY_RUN" = "true" ]; then
-            echo "🧪 DRY RUN MODE: Skipping actual deployment"
-            echo "✅ Workflow validation completed successfully"
-            echo ""
-            echo "📋 What was validated:"
-            echo "  • Workflow structure and dependencies"
-            echo "  • SSH key setup process" 
-            echo "  • Environment configuration process"
-            echo "  • Credential configuration process"
-            echo ""
-            echo "🔧 To complete setup:"
-            echo "  1. Configure missing repository secrets"
-            echo "  2. Re-run this workflow without dry-run mode"
-            echo "  3. Verify deployment succeeds"
+            echo "DRY RUN MODE: Skipping actual deployment"
             exit 0
           fi
-          
-          echo "=== Starting deployment ==="
-          
-          # Check if env.toml exists before deployment
+
           if [ ! -f env.toml ]; then
-            echo "❌ ERROR: env.toml not found in current directory"
-            echo "This file should have been created in the 'Set up environment config' step"
+            echo "ERROR: env.toml not found"
             exit 1
           fi
-          
-          # Deploy using al push with headless mode
-          # The al CLI will read credentials from ~/.action-llama/credentials
-          echo "Running: npx al push --env prod --headless"
+
+          # Deploy project files only. Credentials are managed on the server
+          # via manual `al push` and must not be overwritten by CI.
+          echo "Running: npx al push --env prod --headless --files-only"
           set -o pipefail
-          if npx al push --env prod --headless 2>&1 | tee deploy.log; then
-            echo "✅ Deploy completed successfully"
+          if npx al push --env prod --headless --files-only 2>&1 | tee deploy.log; then
+            echo "Deploy completed successfully"
           else
             EXIT_CODE=$?
-            echo "❌ Deploy failed with exit code: $EXIT_CODE"
-            echo ""
-            echo "=== Deploy output ==="
+            echo "Deploy failed with exit code: $EXIT_CODE"
             cat deploy.log || true
-            
-            # Provide diagnostic information on failure
-            echo ""
-            echo "=== Deployment failure diagnostics ==="
-            echo "Credential directory status:"
-            CREDS_DIR="$HOME/.action-llama/credentials"
-            
-            if [ -d "$CREDS_DIR" ]; then
-              echo "✅ Credential directory exists: $CREDS_DIR"
-              
-              # Show credential types and instances
-              for cred_type in github_token git_ssh anthropic_key github_webhook_secret; do
-                if [ -d "$CREDS_DIR/$cred_type/default" ]; then
-                  field_count=$(ls -1 "$CREDS_DIR/$cred_type/default" 2>/dev/null | wc -l)
-                  echo "  ✅ $cred_type: $field_count field(s) configured"
-                else
-                  echo "  ❌ $cred_type: not configured"
-                fi
-              done
-            else
-              echo "❌ Credential directory missing: $CREDS_DIR"
-            fi
-            
-            # Test credential detection one more time
-            echo ""
-            echo "Final credential detection test:"
-            if npx al creds ls; then
-              echo "✅ al CLI can detect credentials"
-            else
-              echo "❌ al CLI cannot detect credentials (this is the likely cause of deployment failure)"
-            fi
-            
             exit 1
           fi
