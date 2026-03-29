@@ -205,7 +205,7 @@ echo "E2E Coverage: <start>% → <end>%"
 - **Handle push conflicts** by pulling with rebase and retrying.
 - **Exit after 45 minutes** regardless of progress.
 - **Exit after 3 consecutive failures.**
-- **Never fix bugs in source code.** If you discover a bug, open a GitHub issue:
+- **Never fix bugs in source code.** If you discover a bug, open a GitHub issue **on `$REPO` only** (the repo you are improving coverage for — never create issues on other repos):
   ```
   gh issue create --repo $REPO --title "Bug: <short description>" --label "uci-error" --label "ready-for-dev" --body "<file, line number, expected vs actual behavior, and how you discovered it>"
   ```

@@ -186,7 +186,7 @@ If you completed work and there may be more coverage to improve, the next schedu
 - **Exit after 45 minutes** regardless of progress.
 - **Exit after 3 consecutive failures** — the remaining gaps are likely hard to test and may yield to a fresh attempt next run.
 - **Self-review before committing:** Re-read your test code and verify it meets the quality rules in Step 5 before accepting.
-- **Never fix bugs in source code.** If you discover a bug (code behavior doesn't match its documented intent, function name, or comments), do NOT fix it and do NOT write a test that asserts the buggy behavior. Instead, open a GitHub issue:
+- **Never fix bugs in source code.** If you discover a bug (code behavior doesn't match its documented intent, function name, or comments), do NOT fix it and do NOT write a test that asserts the buggy behavior. Instead, open a GitHub issue **on `$REPO` only** (the repo you are improving coverage for — never create issues on other repos):
   ```
   gh issue create --repo $REPO --title "Bug: <short description>" --label "uci-error" --label "ready-for-dev" --body "<file, line number, expected vs actual behavior, and how you discovered it>"
   ```
