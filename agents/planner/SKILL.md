@@ -148,9 +148,28 @@ My recommendation: <your suggested answer>
 <!-- agent:planner -->"
 ```
 
-The issue will be picked up again on the next scheduled run or when new comments are added.
+#### Wait for a quick reply
 
-Run `runlock "github issue $REPO#$ISSUE_NUMBER"` and stop.
+After posting questions, wait briefly to see if the author responds right away. Poll the issue comments every 30 seconds for up to 5 minutes:
+
+```bash
+for i in $(seq 1 10); do
+  sleep 30
+  LATEST_COMMENT=$(gh issue view $ISSUE_NUMBER --repo $REPO --json comments --jq '.comments[-1].body')
+  if echo "$LATEST_COMMENT" | grep -qv '<!-- agent:planner -->'; then
+    echo "Author replied — continuing"
+    break
+  fi
+  if [ $i -eq 10 ]; then
+    echo "No reply after 5 minutes — stopping"
+    runlock "github issue $REPO#$ISSUE_NUMBER"
+    # stop here
+  fi
+done
+```
+
+- If the author replies within 5 minutes, **loop back to "Read the issue"** — re-read all comments, reassess, and either ask more questions or proceed to write the plan.
+- If no reply after 5 minutes, release the lock and stop. The issue will be picked up again on the next scheduled run or when new comments are added.
 
 ### If all questions are resolved and the issue is ready for development
 
