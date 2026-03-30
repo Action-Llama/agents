@@ -102,6 +102,7 @@ If no test file exists, create a new one following the project's patterns. If on
 - Use `describe` blocks organized by function/method name.
 - Use clear test names that describe the expected behavior: `it("returns empty array when no agents are configured")`.
 - Import from the source file under test, not from barrel exports.
+- **Unit tests must NEVER call external services.** No real HTTP requests, no OAuth flows, no browser launches, no network calls of any kind. If code under test makes external calls (HTTP, OAuth, WebSocket, etc.), those dependencies **must** be mocked or stubbed. Use `vi.mock()`, `vi.spyOn()`, or the project's existing mock patterns. A test that hits a real service (e.g., opening a browser for OAuth, calling an API endpoint) is a broken test — reject it immediately.
 - Do not modify any source files — only test files.
 - Do not delete or remove any existing test cases. You may add new `describe` or `it` blocks alongside existing ones.
 
