@@ -2,6 +2,7 @@ models = ["sonnet"]
 credentials = ["github_token", "git_ssh"]
 schedule = "0 * * * *"
 scale = 5
+timeout = 3600
 
 [[webhooks]]
 source = "github"
