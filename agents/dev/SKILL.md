@@ -94,26 +94,39 @@ gh label create "agent-completed" --repo "$REPO" --color 1D76DB --description "A
 
 7. **Validate** — before committing, discover and run all available checks (linting, type checking, tests, build). Look at the project's config files and task runner to find what's available. Run each check, fix any failures, and re-run all checks — a fix for one can break another. Repeat up to 3 rounds. If checks still fail after 3 rounds, proceed to commit anyway and note the failures in the PR description.
 
-8. **Commit and push** —
+8. **Create changeset (if applicable)** — check if the repo uses changesets by looking for `.changeset/config.json`. If it exists, create a changeset before committing:
+    - Run `npx changeset add --empty` or create a markdown file in `.changeset/` manually with the format:
+      ```
+      ---
+      "<package-name>": patch
+      ---
+
+      <short description of the change>
+      ```
+    - Determine the package name from `package.json` (or the relevant workspace package that changed).
+    - Use `patch` for bug fixes, `minor` for new features, `major` for breaking changes — infer from the issue and your changes.
+    - If the repo is a monorepo, include entries for each workspace package you modified.
+
+9. **Commit and push** —
     - `git add -A && git commit -m "fix: <description> (closes #$ISSUE_NUMBER)"`
     - `git push -u origin agent/$ISSUE_NUMBER`
 
-9. **Create PR** — `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\n\n<description>"`
+10. **Create PR** — `gh pr create --repo $REPO --head agent/$ISSUE_NUMBER --base main --title "<title>" --body "Closes #$ISSUE_NUMBER\n\n<description>"`
 
-10. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
+11. **Comment on the issue** — run `gh issue comment $ISSUE_NUMBER --repo $REPO --body "PR created: <pr_url>"`.
 
-11. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --add-label agent-completed`.
+12. **Mark done** — run `gh issue edit $ISSUE_NUMBER --repo $REPO --remove-label in-progress --add-label agent-completed`.
 
-12. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
+13. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
 
 ## Rules
 
 - Work on exactly ONE issue per run
 - **Only modify files in `$REPO`.** Do not create new repos, clone other repos, or open PRs on other repos.
-- **You MUST complete steps 8-11.** Do not stop early.
+- **You MUST complete steps 9-12.** Do not stop early.
 - If tests fail after 2 attempts, create the PR anyway with a note about failing tests
 - **Every issue you claim MUST be resolved before you finish.** Either:
-  - Create a PR (steps 8-11 above), OR
+  - Create a PR (steps 9-12 above), OR
   - If you cannot implement the changes (e.g., issue is unclear, out of scope, blocked), close the issue with a comment explaining why: `gh issue close $ISSUE_NUMBER --repo $REPO --comment "Closing: <reason>"`
   - Never leave a claimed issue open without a PR or a closure.
 - **Scheduled runs:** If you completed work on an issue and there may be more issues to process, run `al-rerun` so the scheduler re-runs you immediately.
