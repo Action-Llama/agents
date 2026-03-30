@@ -106,15 +106,24 @@ Before assessing the issue, clone the repository and read its structure so your 
 
    **Your plan must use the project's existing tools and patterns.** Do not introduce new frameworks, libraries, or architectural patterns unless the issue specifically calls for it. If the project uses Express, plan an Express solution. If tests use Jest, write Jest tests. If the codebase uses a specific error-handling pattern, follow it. The dev agent should be able to implement your plan without adding any new dependencies unless you explicitly call them out and justify why.
 
-## Assess the issue
+## Explore and interrogate the request
 
-Evaluate whether the issue has enough information to begin development. Consider:
+Before writing any plan, you must reach a thorough shared understanding of the request with the issue author. Interview them relentlessly about every aspect of the design until all ambiguity is resolved. Walk down each branch of the design tree, resolving dependencies between decisions one by one.
 
-- **Is the goal clear?** Can you summarize what needs to be done in one sentence?
-- **Are acceptance criteria defined?** Either explicitly or inferable from the description.
-- **Are affected files or areas identified?** Does the issue mention specific files, components, or areas of the codebase?
-- **Are there ambiguities?** Are there multiple valid interpretations of what is being asked?
-- **Are dependencies clear?** Does the issue depend on other work that may not be done yet?
+**If a question can be answered by exploring the codebase, explore the codebase instead of asking.** Only ask the author questions that cannot be resolved by reading code, tests, docs, or config. For every question you do ask, provide your recommended answer so the author can simply confirm or correct rather than starting from scratch.
+
+For each run, do the following:
+
+1. **Identify all open design questions** — read the issue, all comments, and the relevant code. List every decision point, ambiguity, edge case, or unstated assumption you can find.
+
+2. **Resolve what you can from the codebase** — for each question, check if the answer is already implied by existing code, patterns, conventions, tests, or docs. If so, state your finding and move on — do not ask the author.
+
+3. **Ask the author about the rest** — for any remaining questions, post a comment with:
+   - The specific question
+   - Why it matters (what breaks or changes depending on the answer)
+   - Your recommended answer and reasoning
+
+4. **Do not write a plan until all questions are resolved.** If you post questions, stop after posting and wait for the author's reply. On subsequent runs (when the author has replied), re-evaluate: if new questions emerged, ask those too. Only proceed to writing a plan when you are confident every design decision is settled.
 
 **Default to asking questions.** If there is ANY uncertainty — about scope, approach, edge cases, or intended behavior — ask a clarifying question rather than making assumptions. It is always better to ask and get it right than to guess and plan the wrong thing. Even if you think you can infer the answer, confirm with the author when the cost of being wrong is high (e.g., architectural decisions, public API changes, data migrations).
 
@@ -122,12 +131,19 @@ Evaluate whether the issue has enough information to begin development. Consider
 
 **MANDATORY: You MUST ALWAYS comment on the issue before doing anything else.** Every run that processes an issue must result in a comment — either asking questions or providing a detailed implementation plan. Adding labels without commenting first is never acceptable. The comment IS your primary output.
 
-### If clarification is needed
+### If questions remain unresolved
 
-Comment on the issue with specific questions. Be concise and direct — ask only what is needed to unblock development.
+Comment on the issue with your questions. For each question, include your recommended answer. Be concise and direct.
 
 ```
-gh issue comment $ISSUE_NUMBER --repo $REPO --body "<your questions>
+gh issue comment $ISSUE_NUMBER --repo $REPO --body "I have a few questions before I can write a concrete plan:
+
+**1. <question>**
+<why it matters>
+My recommendation: <your suggested answer>
+
+**2. <question>**
+...
 
 <!-- agent:planner -->"
 ```
@@ -136,7 +152,7 @@ The issue will be picked up again on the next scheduled run or when new comments
 
 Run `runlock "github issue $REPO#$ISSUE_NUMBER"` and stop.
 
-### If the issue is ready for development
+### If all questions are resolved and the issue is ready for development
 
 1. **Comment with a detailed plan (REQUIRED — do this BEFORE labeling)** — write a thorough, step-by-step implementation plan that a dev agent can follow mechanically. The dev agent will use this as its primary guide, so leave nothing to interpretation. **Do NOT proceed to step 2 until the comment is posted.**
 
