@@ -20,7 +20,16 @@ Use those values for org and author.
 - For `pull_request` events: the trigger contains `repo` and `number` fields directly.
 - For `check_suite` events: the trigger contains `repo` and `branch` but not a PR number. Find the associated PR by running `gh pr list --repo <repo> --head <branch> --state open --json number --limit 1`. If no open PR is found for the branch, release the lock, and stop.
 
-**Scheduled trigger:** Search across all repositories in your organization for open PRs. Run `gh search prs --owner <org> --state open --limit 10 --json number,title,repository,isDraft`. If no PRs found, and stop.
+**Scheduled trigger:** Search across all repositories in your organization for open PRs whose checks have all completed. Run:
+```
+gh search prs --owner <org> --state open --limit 20 --json number,title,repository,isDraft | \
+  gh pr list --repo <repo> --json number,statusCheckRollup --jq '[.[] | select((.statusCheckRollup | length > 0) and (.statusCheckRollup | all(.status == "COMPLETED")))] | .[].number'
+```
+More precisely: first search for open PRs with `gh search prs --owner <org> --state open --limit 20 --json number,title,repository,isDraft`. Then for each unique repository in the results, filter to only PRs where all checks have completed by running:
+```
+gh pr view <number> --repo <repo> --json number,statusCheckRollup --jq 'select((.statusCheckRollup | length > 0) and (.statusCheckRollup | all(.status == "COMPLETED"))) | .number'
+```
+Discard any PR where this outputs nothing (checks still pending/in-progress). If no PRs remain after filtering, stop.
 
 Set persistent environment variables for the rest of the workflow:
 ```
@@ -56,7 +65,7 @@ runlock "github pr $REPO#$PR_NUMBER"
    Then release the lock, and stop.
 
 3. **Check GitHub status checks** — examine `statusCheckRollup`.
-   - If checks are **pending**, do NOT wait. Continue with the review — you will be re-triggered when checks complete.
+   - If checks are **pending** or **in progress**, release the lock, and stop — you will be re-triggered when checks complete.
    - If checks have **failed**, do NOT stop. Continue to the "Setup Working Environment" section — you will clone the repo, diagnose the failures, and fix them.
 
 ## Heartbeat
