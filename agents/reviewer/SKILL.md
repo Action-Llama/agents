@@ -60,9 +60,9 @@ runlock "github pr $REPO#$PR_NUMBER"
 
 2. **Skip if not ready** — if the PR is:
    - Draft (isDraft: true)
-   - Not mergeable (mergeable: "CONFLICTING")
    - Already merged/closed (state: not "OPEN")
    Then release the lock, and stop.
+   - If the PR has merge conflicts (mergeable: "CONFLICTING"), do NOT stop. Continue to the "Setup Working Environment" section — you will resolve the conflicts.
 
 3. **Check GitHub status checks** — examine `statusCheckRollup`.
    - If checks are **pending** or **in progress**, release the lock, and stop — you will be re-triggered when checks complete.
@@ -111,9 +111,9 @@ Send a heartbeat before each major step (clone, test, build, merge) to prevent t
 1. **Check for merge conflicts** — run `git merge origin/main` (or the base branch)
 
 2. **If merge conflicts exist**:
-   - Try to resolve simple conflicts automatically (e.g., package-lock.json, yarn.lock)
-   - For code conflicts, comment on the PR: "Merge conflicts detected that require manual resolution. Please rebase or merge the latest changes."
-   - Release the lock, and stop.
+   - Resolve all conflicts — both simple ones (package-lock.json, yarn.lock) and code conflicts. Use your understanding of the PR's intent and the base branch changes to pick the correct resolution.
+   - After resolving, run `git add` on the resolved files and `git commit` to complete the merge.
+   - If a conflict is truly ambiguous and you cannot determine the correct resolution with confidence, comment on the PR explaining which files have ambiguous conflicts and request human review. Release the lock, and stop.
 
 3. **If security issues found**:
    - Comment on the PR with specific security concerns found
