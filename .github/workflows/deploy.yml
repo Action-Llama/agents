@@ -139,16 +139,17 @@ jobs:
       - name: Set up host-user runtime prerequisites
         run: |
           # al push validates host-user runtime requirements locally.
-          # Create the system user on the CI runner to pass validation.
-          AGENT_USER="al-agent"
+          # Create system users on the CI runner to pass validation.
           RUNNER_USER=$(whoami)
 
-          echo "Creating system user '$AGENT_USER' for host-user runtime validation..."
-          sudo useradd -r -m -s /usr/sbin/nologin "$AGENT_USER"
+          for AGENT_USER in al-agent al-planner; do
+            echo "Creating system user '$AGENT_USER' for host-user runtime validation..."
+            sudo useradd -r -m -s /usr/sbin/nologin "$AGENT_USER"
 
-          echo "Configuring sudoers for $RUNNER_USER -> $AGENT_USER..."
-          echo "$RUNNER_USER ALL=($AGENT_USER) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/al-$AGENT_USER"
-          sudo chmod 0440 "/etc/sudoers.d/al-$AGENT_USER"
+            echo "Configuring sudoers for $RUNNER_USER -> $AGENT_USER..."
+            echo "$RUNNER_USER ALL=($AGENT_USER) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/al-$AGENT_USER"
+            sudo chmod 0440 "/etc/sudoers.d/al-$AGENT_USER"
+          done
 
       - name: Deploy
         env:
