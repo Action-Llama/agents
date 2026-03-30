@@ -150,10 +150,10 @@ My recommendation: <your suggested answer>
 
 #### Wait for a quick reply
 
-After posting questions, poll the issue every 30 seconds for up to 5 minutes to see if the author responds. To check for a new reply, fetch the most recent comment and check whether it was written by someone other than the planner agent (i.e. it does NOT contain the `<!-- agent:planner -->` marker).
+After posting questions, poll the issue every 30 seconds for up to 10 minutes to see if the author responds. To check for a new reply, fetch the most recent comment and check whether it was written by someone other than the planner agent (i.e. it does NOT contain the `<!-- agent:planner -->` marker).
 
-- **If the author replies within 5 minutes** — read the new comments, reassess, and either ask more questions or proceed to write the plan.
-- **If no reply after 5 minutes** — release the lock and stop. The issue will be picked up again on the next scheduled run or when new comments are added.
+- **If the author replies within 10 minutes** — read the new comments, reassess, and either ask more questions or proceed to write the plan.
+- **If no reply after 10 minutes** — release the lock and stop. The issue will be picked up again on the next scheduled run or when new comments are added.
 
 ### If all questions are resolved and the issue is ready for development
 
