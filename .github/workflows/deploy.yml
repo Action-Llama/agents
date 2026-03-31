@@ -47,18 +47,26 @@ jobs:
           CURRENT=$(node -p "require('./package.json').dependencies['@action-llama/action-llama']")
           CURRENT_VERSION="${CURRENT#^}"
 
-          LATEST_NEXT=$(npm view @action-llama/action-llama@next version 2>/dev/null || echo "")
           LATEST_STABLE=$(npm view @action-llama/action-llama version)
+          LATEST_NEXT=$(npm view @action-llama/action-llama@next version 2>/dev/null || echo "")
 
-          if [ -n "$LATEST_NEXT" ] && echo "$CURRENT_VERSION" | grep -q "^0\.1[0-9]"; then
-            TARGET_VERSION="$LATEST_NEXT"
+          # Determine which dist-tag track the current version is on
+          if [ -n "$LATEST_NEXT" ] && [ "$CURRENT_VERSION" = "$LATEST_NEXT" ]; then
+            TARGET_TAG="next"
+          elif npx -y semver -r ">$LATEST_STABLE" "$CURRENT_VERSION" >/dev/null 2>&1; then
             TARGET_TAG="next"
           else
-            TARGET_VERSION="$LATEST_STABLE"
             TARGET_TAG="latest"
           fi
 
-          if [ "$CURRENT_VERSION" != "$TARGET_VERSION" ]; then
+          if [ "$TARGET_TAG" = "next" ]; then
+            TARGET_VERSION="$LATEST_NEXT"
+          else
+            TARGET_VERSION="$LATEST_STABLE"
+          fi
+
+          # Never downgrade
+          if npx -y semver -r ">$CURRENT_VERSION" "$TARGET_VERSION" >/dev/null 2>&1; then
             echo "Updating @action-llama/action-llama from $CURRENT_VERSION to $TARGET_VERSION ($TARGET_TAG)"
             if [ "$TARGET_TAG" = "next" ]; then
               npm install @action-llama/action-llama@$TARGET_TAG
@@ -68,7 +76,7 @@ jobs:
             echo "updated=true" >> $GITHUB_OUTPUT
             echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
           else
-            echo "Action Llama is already up to date ($CURRENT_VERSION)"
+            echo "Action Llama is already up to date ($CURRENT_VERSION, target $TARGET_VERSION on $TARGET_TAG)"
             echo "updated=false" >> $GITHUB_OUTPUT
           fi
 
