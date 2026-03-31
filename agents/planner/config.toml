@@ -23,7 +23,3 @@ author = "asselstine"
 org = "Action-Llama"
 triggerLabel = "plan"
 author = "asselstine"
-
-[runtime]
-type = "host-user"
-run_as = "al-planner"

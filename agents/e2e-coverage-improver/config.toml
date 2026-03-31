@@ -3,8 +3,5 @@ credentials = ["github_token", "git_ssh"]
 schedule = "0 * * * *"
 timeout = 3600
 
-[runtime]
-type = "host-user"
-
 [params]
 repo = "Action-Llama/action-llama"
