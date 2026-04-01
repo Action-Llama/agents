@@ -1,4 +1,4 @@
-models = ["sonnet"]
+models = ["haiku"]
 credentials = ["github_token", "git_ssh"]
 # schedule = "0 * * * *"
 scale = 5
