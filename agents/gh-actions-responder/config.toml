@@ -6,6 +6,7 @@ maxWorkQueueSize = 1
 source = "github"
 events = ["workflow_run"]
 actions = ["completed"]
+conclusions = ["failure"]
 branches = ["main"]
 
 [params]
