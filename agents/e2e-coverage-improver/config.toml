@@ -2,6 +2,7 @@ models = ["sonnet"]
 credentials = ["github_token", "git_ssh"]
 schedule = "0 * * * *"
 timeout = 3600
+maxWorkQueueSize = 1
 
 [params]
 repo = "Action-Llama/action-llama"
