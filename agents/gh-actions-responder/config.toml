@@ -1,6 +1,5 @@
 models = ["opus"]
 credentials = ["github_token", "git_ssh"]
-schedule = "0 * * * *"
 maxWorkQueueSize = 1
 
 [[webhooks]]
