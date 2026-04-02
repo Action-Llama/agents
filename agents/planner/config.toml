@@ -1,7 +1,7 @@
 models = ["opus"]
 credentials = ["github_token", "git_ssh"]
 # schedule = "0 * * * *"
-scale = 10
+scale = 8
 
 [[webhooks]]
 source = "github"

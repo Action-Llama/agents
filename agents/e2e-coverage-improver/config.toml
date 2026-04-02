@@ -3,7 +3,7 @@ credentials = ["github_token", "git_ssh"]
 schedule = "0 */3 * * *"
 timeout = 3600
 maxWorkQueueSize = 1
-scale = 0
+scale = 1
 
 [params]
 repo = "Action-Llama/action-llama"
