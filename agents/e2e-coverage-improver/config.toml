@@ -1,4 +1,4 @@
-models = ["sonnet"]
+models = ["medium"]
 credentials = ["github_token", "git_ssh"]
 schedule = "0 */3 * * *"
 timeout = 3600

@@ -1,23 +1,18 @@
 scale = 20
 
-[harness]
-type = "claude"
-
-[models.haiku]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
+[models.fast]
+provider = "openai"
+model = "gpt-4o-mini"
 authType = "api_key"
 
-[models.sonnet]
-provider = "anthropic"
-model = "claude-sonnet-4-6"
-thinkingLevel = "medium"
+[models.medium]
+provider = "openai"
+model = "gpt-4o"
 authType = "api_key"
 
-[models.opus]
-provider = "anthropic"
-model = "claude-opus-4-6"
-thinkingLevel = "medium"
+[models.deep]
+provider = "openai"
+model = "o1-preview"
 authType = "api_key"
 
 [webhooks.github]
