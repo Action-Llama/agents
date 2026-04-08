@@ -1,7 +1,8 @@
 models = ["sonnet"]
 credentials = ["github_token", "git_ssh"]
 # schedule = "0 * * * *"
-scale = 3
+scale = 10
+maxWorkQueueSize = 10
     
 [[webhooks]]
 source = "github"
