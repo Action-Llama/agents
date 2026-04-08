@@ -24,21 +24,12 @@ Use those values for org, triggerLabel, and author.
 
 **Scheduled trigger:** Search across all repositories in your organization for unplanned issues. Run `gh search issues --owner <org> --label <triggerLabel> --state open --author <author> --json number,title,body,labels,repository --limit 10`. If no issues found, stop.
 
-Set persistent environment variables so they're available in all subsequent commands.
+Record the target repository and issue number before proceeding.
 
-**Webhook trigger:**
-```
-setenv REPO "<repo from webhook-trigger>"    # e.g. "Action-Llama/some-repo"
-setenv ISSUE_NUMBER <number from webhook-trigger>  # e.g. 42
-```
+- **Webhook trigger:** use the `repo` and `number` values from the trigger.
+- **Scheduled trigger:** use the selected search result's repository and issue number.
 
-**Scheduled trigger:** Set these from the search results:
-```
-setenv REPO "<owner/repo from search result>"
-setenv ISSUE_NUMBER <number from search result>
-```
-
-Verify they are set before proceeding:
+Verify you have both values before proceeding:
 ```
 echo "REPO=$REPO ISSUE_NUMBER=$ISSUE_NUMBER"
 ```

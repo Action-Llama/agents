@@ -20,11 +20,7 @@ If a `<webhook-trigger>` block is present, extract from it:
 - `repo` — the repository (owner/repo)
 - The workflow run ID from the trigger payload
 
-Set variables and proceed to the workflow section with this single run:
-```
-export REPO="<repo from trigger>"
-export RUN_ID="<run ID from trigger>"
-```
+Record the repository and run ID from the trigger, then proceed to the workflow section with this single run.
 
 If the webhook trigger's conclusion is not `failure`, stop immediately.
 

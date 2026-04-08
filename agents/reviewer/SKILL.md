@@ -31,11 +31,7 @@ gh pr view <number> --repo <repo> --json number,statusCheckRollup --jq 'select((
 ```
 Discard any PR where this outputs nothing (checks still pending/in-progress). If no PRs remain after filtering, stop.
 
-Set persistent environment variables for the rest of the workflow:
-```
-setenv REPO "<the repository name>"        # e.g. "Action-Llama/some-repo"
-setenv PR_NUMBER <the PR number>           # e.g. 42
-```
+Record the repository and PR number for the rest of the workflow before continuing.
 
 ## Acquire resource lock
 

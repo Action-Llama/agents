@@ -2,17 +2,17 @@ scale = 20
 
 [models.fast]
 provider = "openai"
-model = "gpt-4o-mini"
+model = "gpt-5.4-nano"
 authType = "api_key"
 
 [models.medium]
 provider = "openai"
-model = "gpt-4o"
+model = "gpt-5.4-mini"
 authType = "api_key"
 
 [models.deep]
 provider = "openai"
-model = "o1-preview"
+model = "gpt-5.4"
 authType = "api_key"
 
 [webhooks.github]

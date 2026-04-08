@@ -3,7 +3,6 @@
 #
 # SAFE TO CUSTOMIZE:
 #   - Add system packages (RUN apk add ...)
-#   - Set environment variables (ENV ...)
 #   - Install language runtimes or CLI tools
 #
 # DO NOT MODIFY:
@@ -12,7 +11,6 @@
 # Examples:
 #   RUN apk add --no-cache python3 py3-pip
 #   RUN apk add --no-cache github-cli
-#   ENV MY_VAR=value
 
 FROM al-agent:latest
 
