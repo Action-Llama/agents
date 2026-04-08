@@ -14,7 +14,7 @@
 #   RUN apk add --no-cache github-cli
 #   ENV MY_VAR=value
 
-FROM al-agent:d4227bec
+FROM al-agent:latest
 
 USER root
 RUN apk add --no-cache github-cli
