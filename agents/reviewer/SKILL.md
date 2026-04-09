@@ -40,7 +40,7 @@ Record the repository and PR number for the rest of the workflow before continui
 Before doing any other work, acquire an exclusive lock on the PR. This prevents parallel instances from working on the same PR and posting duplicate comments.
 
 ```
-LOCK_RESULT=$(rlock "github pr $REPO#$PR_NUMBER")
+LOCK_RESULT=$(rlock "github://$REPO/pulls/$PR_NUMBER")
 ```
 
 Check the result:
@@ -49,7 +49,7 @@ Check the result:
 
 **IMPORTANT:** From this point forward, every exit path (error, skip, or merge) MUST release the lock first:
 ```
-runlock "github pr $REPO#$PR_NUMBER"
+runlock "github://$REPO/pulls/$PR_NUMBER"
 ```
 
 ## Initial PR Assessment
@@ -70,7 +70,7 @@ runlock "github pr $REPO#$PR_NUMBER"
 
 During long-running operations (cloning, testing, building), send a heartbeat to keep your lock alive:
 ```
-rlock-heartbeat "github pr $REPO#$PR_NUMBER"
+rlock-heartbeat "github://$REPO/pulls/$PR_NUMBER"
 ```
 Send a heartbeat before each major step (clone, test, build, merge) to prevent the lock from expiring.
 
@@ -142,12 +142,12 @@ Send a heartbeat before each major step (clone, test, build, merge) to prevent t
    gh pr comment $PR_NUMBER --repo $REPO --body "✅ Automatically reviewed and merged. All checks passed."
    ```
 
-4. **Release the lock** — run `runlock "github pr $REPO#$PR_NUMBER"`
+4. **Release the lock** — run `runlock "github://$REPO/pulls/$PR_NUMBER"`
 
 ## Error Handling
 
 If any step fails:
-1. Release the lock: `runlock "github pr $REPO#$PR_NUMBER"`
+1. Release the lock: `runlock "github://$REPO/pulls/$PR_NUMBER"`
 2. Check if the most recent non-claim PR comment already describes this same failure — if so, do NOT add another comment. Stop.
 3. Otherwise, add a comment to the PR explaining what went wrong
 4. Do NOT merge the PR

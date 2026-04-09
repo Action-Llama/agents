@@ -53,7 +53,7 @@ If `REPO` is empty, contains placeholder text, does not contain exactly one `/`,
 Before doing any other work, acquire an exclusive lock on the issue. This prevents parallel instances from working on the same issue.
 
 ```
-LOCK_RESULT=$(rlock "github issue $REPO#$ISSUE_NUMBER")
+LOCK_RESULT=$(rlock "github://$REPO/issues/$ISSUE_NUMBER")
 ```
 
 Check the result:
@@ -65,16 +65,16 @@ Check the result:
 
 **IMPORTANT:** From this point forward, every exit path (error, skip, or completion) MUST release the lock first:
 ```
-runlock "github issue $REPO#$ISSUE_NUMBER"
+runlock "github://$REPO/issues/$ISSUE_NUMBER"
 ```
 
 ## Heartbeat
 
 During long-running operations (cloning, implementing, testing), send a heartbeat to keep your lock alive:
 ```
-rlock-heartbeat "github issue $REPO#$ISSUE_NUMBER"
+rlock-heartbeat "github://$REPO/issues/$ISSUE_NUMBER"
 ```
-Send a heartbeat before each major step (clone, implement, test, push) to prevent the lock from expiring.
+Send a heartbeat at least every 30 minutes to prevent the lock from expiring.  run the command by itself so that you can inspect the output.
 
 ## Setup — ensure labels exist
 
@@ -153,10 +153,11 @@ gh label create "agent-completed" --repo "$REPO" --color 1D76DB --description "A
 
     This comment is best-effort only after the PR exists and labels are correct. If it fails, do not undo completed work. Report the comment failure, but still continue to lock release.
 
-15. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
+15. **Release the lock** — run `runlock "github://$REPO/issues/$ISSUE_NUMBER"`
 
 ## Rules
 
+- If you exit early, explain why
 - Work on exactly ONE issue per run
 - **Only modify files in `$REPO`.** Do not create new repos, clone other repos, or open PRs on other repos.
 - **You MUST complete steps 9-13.** Do not stop early.

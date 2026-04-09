@@ -49,7 +49,7 @@ If no workflows are currently broken, report that via `al-status` and stop.
 Lock the **workflow** (not the individual run). The lock key is the workflow's GitHub URL, e.g.:
 
 ```
-LOCK_RESULT=$(rlock "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FILE")
+LOCK_RESULT=$(rlock "github://$REPO/workflows/$WORKFLOW_FILE")
 ```
 
 Where `$WORKFLOW_FILE` is the workflow filename (e.g., `e2e.yml`). To find it, look at the run's `path` field or derive it from the workflow name and the `.github/workflows/` directory after cloning.
@@ -59,7 +59,7 @@ Where `$WORKFLOW_FILE` is the workflow filename (e.g., `e2e.yml`). To find it, l
 
 **Every exit path must release the lock:**
 ```
-runlock "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FILE"
+runlock "github://$REPO/workflows/$WORKFLOW_FILE"
 ```
 
 ## Workflow
@@ -89,7 +89,7 @@ runlock "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FI
    git push origin main
    ```
 
-10. **Send heartbeat** — run `rlock-heartbeat "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FILE"` to keep the lock alive while waiting.
+10. **Send heartbeat** — run `rlock-heartbeat "github://$REPO/workflows/$WORKFLOW_FILE"` to keep the lock alive while waiting.
 
 11. **Wait for CI** — poll the workflow to see if your fix worked:
     ```
@@ -102,7 +102,7 @@ runlock "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FI
     - **If it fails again** — go back to step 3 with the new run ID. Analyze the new failure, implement another fix, and repeat. Do this up to **3 attempts** total.
     - **After 3 failed attempts** — run `al-status "could not fix $WORKFLOW_FILE in $REPO after 3 attempts"`, release the lock, and stop.
 
-13. **Release the lock** — run `runlock "github workflow https://github.com/$REPO/actions/workflows/$WORKFLOW_FILE"`.
+13. **Release the lock** — run `runlock "github://$REPO/workflows/$WORKFLOW_FILE"`.
 
 ## Rules
 

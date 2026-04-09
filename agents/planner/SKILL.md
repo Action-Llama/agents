@@ -40,7 +40,7 @@ If either is empty, stop — do not run any further commands.
 Before doing any other work, acquire an exclusive lock on the issue. This prevents parallel instances from planning the same issue.
 
 ```
-LOCK_RESULT=$(rlock "github issue $REPO#$ISSUE_NUMBER")
+LOCK_RESULT=$(rlock "github://$REPO/issues/$ISSUE_NUMBER")
 ```
 
 Check the result:
@@ -49,7 +49,7 @@ Check the result:
 
 **IMPORTANT:** From this point forward, every exit path MUST release the lock first:
 ```
-runlock "github issue $REPO#$ISSUE_NUMBER"
+runlock "github://$REPO/issues/$ISSUE_NUMBER"
 ```
 
 ## Read the issue
@@ -196,7 +196,7 @@ After posting questions, poll the issue every 30 seconds for up to 10 minutes to
    <!-- agent:planner -->"
    ```
 
-2. **Release the lock** — run `runlock "github issue $REPO#$ISSUE_NUMBER"`
+2. **Release the lock** — run `runlock "github://$REPO/issues/$ISSUE_NUMBER"`
 
 ## Rules
 
