@@ -11,6 +11,8 @@ Use those values for org and author.
 
 `GITHUB_TOKEN` is already set in your environment. Use `gh` CLI and `git` directly.
 
+Prefer PR-native check data over ad hoc REST probing. Use `gh pr view ... --json statusCheckRollup` to inspect checks for a PR. Do not call `gh api repos/$REPO/check-suites`; that REST path does not exist. If you need raw check suite details, first get the PR head SHA and then call `gh api repos/$REPO/commits/$HEAD_SHA/check-suites`.
+
 **You MUST complete ALL steps below.** Do not stop after finding a PR — you must review, test, fix if needed, and merge.
 
 
@@ -52,7 +54,7 @@ runlock "github pr $REPO#$PR_NUMBER"
 
 ## Initial PR Assessment
 
-1. **Get PR details** — run `gh pr view $PR_NUMBER --repo $REPO --json state,isDraft,mergeable,mergeStateStatus,statusCheckRollup,headRefName,baseRefName,author,assignees`
+1. **Get PR details** — run `gh pr view $PR_NUMBER --repo $REPO --json state,isDraft,mergeable,mergeStateStatus,statusCheckRollup,headRefName,headRefOid,baseRefName,author,assignees`
 
 2. **Skip if not ready** — if the PR is:
    - Draft (isDraft: true)
