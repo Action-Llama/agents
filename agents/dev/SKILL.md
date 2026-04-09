@@ -27,7 +27,7 @@ Use those values for org, triggerLabel, and author.
   ```
   If this fails, stop, release the lock, and report the clone failure.
 - If a repo-local command fails in `/app`, `/`, or any directory other than `$REPO_DIR`, re-run it from `$REPO_DIR` before treating it as a real project failure.
-- Prefer non-interactive GitHub CLI usage. Always pass `--repo`, `--body`, `--title`, `--head`, and `--base` explicitly so `gh` does not open prompts.
+- Prefer non-interactive GitHub CLI usage. Pass explicit flags like `--repo`, `--body`, `--title`, `--head`, and `--base` for commands that support them so `gh` does not open prompts. For `gh pr view`, use a PR number or branch name as the positional argument; `gh pr view` does not support `--head`.
 
 ## Determine repository and issue
 
@@ -137,7 +137,7 @@ gh label create "agent-completed" --repo "$REPO" --color 1D76DB --description "A
 
 11. **Verify PR creation** — after `gh pr create`, verify the branch has an open PR and capture its URL:
     ```
-    gh pr view --repo $REPO --head agent/$ISSUE_NUMBER --json url,state
+    gh pr list --repo $REPO --head agent/$ISSUE_NUMBER --state open --json url,state --limit 1
     ```
     If this verification fails, stop and report the PR creation failure instead of continuing.
 
